@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-terror-black: #000000;
+  --color-terror-darkred: #830000;
+  --color-terror-crimson: #BC0202;
+  --color-terror-firered: #FF0000;
+
+  --color-theme-bg: #000000;
+  --color-theme-box: #0a0000;
+  --color-theme-border: #830000;
+  --color-theme-border-glow: #FF0000;
+}
+
+@layer base {
+  body {
+    background-color: #000000;
+    background-image: 
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.84), rgba(0, 0, 0, 0.96)),
+      radial-gradient(circle at 50% 10%, rgba(255, 0, 0, 0.22), rgba(0, 0, 0, 0.98)),
+      url('/gym-bg.jpg');
+    background-position: center top;
+    background-size: cover;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: #ffffff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+}
+
+/* Custom Terror Gym Black & Red Box Styling - Strictly Red and Black, No Brown */
+.theme-box {
+  background: linear-gradient(180deg, #120000 0%, #050000 100%);
+  border: 1px solid #830000;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.95), 0 0 16px -2px rgba(188, 2, 2, 0.2), inset 0 1px 0 rgba(255, 0, 0, 0.3);
+  transition: all 0.25s ease-in-out;
+}
+
+.theme-box:hover {
+  border-color: #FF0000;
+  box-shadow: 0 12px 35px -5px rgba(255, 0, 0, 0.3), inset 0 1px 0 rgba(255, 0, 0, 0.5);
+}
+
+.theme-box-sub {
+  background: #0a0000;
+  border: 1px solid #830000;
+}
+
+.theme-box-sub:hover {
+  border-color: #BC0202;
+}
+
+/* Red & Black Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #830000;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF0000;
+}
