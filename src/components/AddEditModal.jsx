@@ -1,11 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Calendar } from 'lucide-react';
+
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function parseDateInput(inputVal) {
+  if (!inputVal) return { date: '', rawDate: '', displayDate: '', dayOfWeek: '' };
+
+  let year, month, day;
+
+  // Case 1: YYYY-MM-DD (e.g. 2026-10-11)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(inputVal)) {
+    const parts = inputVal.split('-');
+    year = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    day = parseInt(parts[2], 10);
+  }
+  // Case 2: DD-MM-YYYY (e.g. 11-10-2026)
+  else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(inputVal)) {
+    const parts = inputVal.split('-');
+    day = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    year = parseInt(parts[2], 10);
+  } else {
+    const d = new Date(inputVal);
+    if (!isNaN(d.getTime())) {
+      year = d.getFullYear();
+      month = d.getMonth() + 1;
+      day = d.getDate();
+    } else {
+      return { date: inputVal, rawDate: inputVal, displayDate: inputVal, dayOfWeek: '' };
+    }
+  }
+
+  const yStr = String(year);
+  const mStr = String(month).padStart(2, '0');
+  const dStr = String(day).padStart(2, '0');
+  const isoDate = `${yStr}-${mStr}-${dStr}`;
+  const rawDate = `${dStr}-${mStr}-${yStr}`;
+  const displayDate = `${monthNames[month - 1] || 'Oct'} ${dStr}`;
+  
+  const dateObj = new Date(year, month - 1, day);
+  const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+
+  return { date: isoDate, rawDate, displayDate, dayOfWeek };
+}
 
 export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
   const [formData, setFormData] = useState({
     date: '',
     rawDate: '',
     displayDate: '',
+    dayOfWeek: '',
     wakeUp: '08:00 AM',
     weight: 65.0,
     water: 4.0,
@@ -26,28 +71,44 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
-    } else {
+      const parsed = parseDateInput(initialData.date || initialData.rawDate);
       setFormData({
-        date: '2026-10-10',
-        rawDate: '10-10-2026',
-        displayDate: 'Oct 10',
+        ...initialData,
+        date: parsed.date || initialData.date,
+        rawDate: parsed.rawDate || initialData.rawDate,
+        displayDate: parsed.displayDate || initialData.displayDate,
+        dayOfWeek: parsed.dayOfWeek || initialData.dayOfWeek
+      });
+    } else {
+      // Default to today or recent date
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, '0');
+      const d = String(today.getDate()).padStart(2, '0');
+      const defaultIso = `${y}-${m}-${d}`;
+      const parsed = parseDateInput(defaultIso);
+
+      setFormData({
+        date: parsed.date,
+        rawDate: parsed.rawDate,
+        displayDate: parsed.displayDate,
+        dayOfWeek: parsed.dayOfWeek,
         wakeUp: '08:00 AM',
         weight: 65.5,
         water: 4.0,
         steps: 8500,
         gym: true,
-        workout: 'Legs & Calves',
+        workout: 'Chest and Triceps',
         boxing: false,
         abs: false,
         caloriesGoal: 1950,
         caloriesEaten: 1850,
         proteinGoal: 120,
-        proteinEaten: 120,
-        fiber: 25,
+        proteinEaten: 110,
+        fiber: 20,
         sleep: 8.0,
         energy: 4.0,
-        notes: 'three time'
+        notes: 'two time'
       });
     }
   }, [initialData, isOpen]);
@@ -56,6 +117,18 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === 'date') {
+      const parsed = parseDateInput(value);
+      setFormData(prev => ({
+        ...prev,
+        date: value,
+        rawDate: parsed.rawDate || value,
+        displayDate: parsed.displayDate || value,
+        dayOfWeek: parsed.dayOfWeek || ''
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : (
@@ -68,10 +141,14 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const parsed = parseDateInput(formData.date);
     onSave({
       ...formData,
-      id: formData.id || formData.date,
-      displayDate: formData.displayDate || formData.date.slice(5)
+      id: parsed.date || formData.date,
+      date: parsed.date || formData.date,
+      rawDate: parsed.rawDate || formData.rawDate,
+      displayDate: parsed.displayDate || formData.displayDate,
+      dayOfWeek: parsed.dayOfWeek || formData.dayOfWeek,
     });
     onClose();
   };
@@ -99,15 +176,18 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
           {/* Row 1: Date, Wake Up, Weight */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[#0F3D3E] font-medium mb-1">Date (YYYY-MM-DD)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Date</label>
               <input
-                type="text"
+                type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
                 required
-                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] font-medium focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
+              <span className="text-[10px] text-[#2A9D8F] font-semibold mt-1 block">
+                Saving: {formData.displayDate || formData.date} ({formData.rawDate})
+              </span>
             </div>
             <div>
               <label className="block text-[#0F3D3E] font-medium mb-1">Wake Up Time</label>
@@ -227,7 +307,7 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
                 name="workout"
                 value={formData.workout}
                 onChange={handleChange}
-                placeholder="e.g. Chest & Triceps, Leg day, Back & Biceps"
+                placeholder="e.g. Chest and Triceps, Leg day, Back and Biceps"
                 className="w-full bg-[#FFFFFF] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>

@@ -14,8 +14,7 @@ import {
   Sparkles,
   Plus,
   Download,
-  Calendar,
-  RotateCcw
+  Calendar
 } from 'lucide-react';
 
 export default function App() {
@@ -46,13 +45,6 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
 
-  const resetToDefault = () => {
-    if (window.confirm('Reset all fitness logs back to original spreadsheet data?')) {
-      setData(initialFitnessData);
-      localStorage.removeItem('fit_tracker_pro_data');
-    }
-  };
-
   const handleAddRow = () => {
     setEditingRow(null);
     setIsModalOpen(true);
@@ -69,7 +61,7 @@ export default function App() {
       if (existsIndex >= 0) {
         const updated = [...prev];
         updated[existsIndex] = { ...updated[existsIndex], ...savedRow };
-        return updated;
+        return updated.sort((a, b) => new Date(a.date) - new Date(b.date));
       } else {
         return [...prev, savedRow].sort((a, b) => new Date(a.date) - new Date(b.date));
       }
@@ -87,6 +79,14 @@ export default function App() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // Dynamic Date Range Calculation
+  const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const earliest = sortedData[0];
+  const latest = sortedData[sortedData.length - 1];
+  const dynamicDateRange = earliest && latest
+    ? `${earliest.displayDate}, ${earliest.date?.slice(0, 4) || '2026'} – ${latest.displayDate}, ${latest.date?.slice(0, 4) || '2026'}`
+    : 'All Time Logs';
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
@@ -108,30 +108,24 @@ export default function App() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-base sm:text-lg text-[#0F3D3E] tracking-tight">FitTracker Pro</h1>
-             
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40 shadow-xs">
+                Slate on Mint
+              </span>
             </div>
             <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium">
               <Calendar className="w-3.5 h-3.5 text-[#2A9D8F]" />
-              <span>Sep 23, 2026 – Oct 09, 2026</span>
+              <span>{dynamicDateRange}</span>
               <span className="text-[#2A9D8F]">&bull;</span>
               <span className="text-[#0F3D3E] font-bold">{data.length} tracked days</span>
             </div>
           </div>
         </div>
 
-        {/* Global Toolbar buttons */}
+        {/* Global Toolbar buttons - Reset button removed as requested */}
         <div className="flex items-center gap-2">
           <button
-            onClick={resetToDefault}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#355E5F] hover:text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
-            title="Reset to Original Spreadsheet Data"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#2A9D8F]" />
-            <span className="hidden sm:inline">Reset</span>
-          </button>
-          <button
             onClick={exportJSON}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
             title="Download Clean JSON Schema"
           >
             <Download className="w-3.5 h-3.5 text-[#2A9D8F]" />
@@ -139,7 +133,7 @@ export default function App() {
           </button>
           <button
             onClick={handleAddRow}
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2A9D8F]/25 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2A9D8F]/25 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-4 h-4" />
             <span>Add Log</span>
@@ -197,8 +191,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Coach Recommendations */}
-            <AIFitnessCoach />
+            {/* Live Dynamic AI Coach Recommendations */}
+            <AIFitnessCoach data={data} />
           </div>
         )}
 
@@ -246,17 +240,25 @@ export default function App() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="theme-box-sub p-4 rounded-xl">
-                      <span className="text-xs font-bold text-[#2A9D8F] uppercase tracking-wide">Gym Days (11)</span>
-                      <div className="text-2xl font-black text-[#0F3D3E] mt-1">9,382</div>
+                      <span className="text-xs font-bold text-[#2A9D8F] uppercase tracking-wide">Gym Days ({data.filter(d => d.gym).length})</span>
+                      <div className="text-2xl font-black text-[#0F3D3E] mt-1">
+                        {Math.round(data.filter(d => d.gym).reduce((acc, d) => acc + (d.steps || 0), 0) / (data.filter(d => d.gym).length || 1)).toLocaleString()}
+                      </div>
                       <span className="text-xs text-[#355E5F]">Average Steps</span>
-                      <div className="text-xs text-[#2A9D8F] mt-2 font-semibold">1,917 kcal avg eaten</div>
+                      <div className="text-xs text-[#2A9D8F] mt-2 font-semibold">
+                        {Math.round(data.filter(d => d.gym).reduce((acc, d) => acc + (d.caloriesEaten || 0), 0) / (data.filter(d => d.gym).length || 1))} kcal avg eaten
+                      </div>
                     </div>
 
                     <div className="theme-box-sub p-4 rounded-xl">
-                      <span className="text-xs font-bold text-[#0F3D3E] uppercase tracking-wide">Rest Days (5)</span>
-                      <div className="text-2xl font-black text-[#0F3D3E] mt-1">6,577</div>
+                      <span className="text-xs font-bold text-[#0F3D3E] uppercase tracking-wide">Rest Days ({data.filter(d => !d.gym).length})</span>
+                      <div className="text-2xl font-black text-[#0F3D3E] mt-1">
+                        {Math.round(data.filter(d => !d.gym).reduce((acc, d) => acc + (d.steps || 0), 0) / (data.filter(d => !d.gym).length || 1)).toLocaleString()}
+                      </div>
                       <span className="text-xs text-[#355E5F]">Average Steps</span>
-                      <div className="text-xs text-[#355E5F] mt-2 font-semibold">1,550 kcal avg eaten</div>
+                      <div className="text-xs text-[#355E5F] mt-2 font-semibold">
+                        {Math.round(data.filter(d => !d.gym).reduce((acc, d) => acc + (d.caloriesEaten || 0), 0) / (data.filter(d => !d.gym).length || 1))} kcal avg eaten
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -265,12 +267,12 @@ export default function App() {
                   <h3 className="font-semibold text-[#0F3D3E] text-sm mb-2">Combat & Specialty Workouts</h3>
                   <div className="flex items-center gap-4 text-xs text-[#0F3D3E]">
                     <div className="p-3 theme-box-sub rounded-xl flex-1">
-                      <span className="text-[#2A9D8F] font-bold block text-sm">Boxing: 1 Session</span>
-                      <span className="text-[#355E5F] text-[11px]">Logged on Oct 06</span>
+                      <span className="text-[#2A9D8F] font-bold block text-sm">Boxing: {data.filter(d => d.boxing).length} Session(s)</span>
+                      <span className="text-[#355E5F] text-[11px]">Logged in tracker</span>
                     </div>
                     <div className="p-3 theme-box-sub rounded-xl flex-1">
-                      <span className="text-[#0F3D3E] font-bold block text-sm">Dedicated Abs: 1 Session</span>
-                      <span className="text-[#355E5F] text-[11px]">Logged on Oct 06</span>
+                      <span className="text-[#0F3D3E] font-bold block text-sm">Dedicated Abs: {data.filter(d => d.abs).length} Session(s)</span>
+                      <span className="text-[#355E5F] text-[11px]">Logged in tracker</span>
                     </div>
                   </div>
                 </div>
@@ -298,7 +300,7 @@ export default function App() {
 
         {activeTab === 'coach' && (
           <div className="space-y-6 animate-fadeIn">
-            <AIFitnessCoach />
+            <AIFitnessCoach data={data} />
           </div>
         )}
       </main>
