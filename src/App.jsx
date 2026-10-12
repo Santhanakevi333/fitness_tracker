@@ -102,15 +102,13 @@ export default function App() {
       {/* Top Navbar */}
       <header className="sticky top-0 z-30 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#2A9D8F]/20 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-sm shadow-[#0F3D3E]/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0F3D3E] to-[#2A9D8F] flex items-center justify-center shadow-md shadow-[#2A9D8F]/25">
-            <Activity className="w-5 h-5 text-white" />
+          <div className="w-11 h-11 rounded-2xl bg-[#E8F5E9] border border-[#2A9D8F]/35 p-1.5 flex items-center justify-center shadow-xs overflow-hidden">
+            <img src="/tracker.png" alt="FitTracker Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-extrabold text-base sm:text-lg text-[#0F3D3E] tracking-tight">FitTracker Pro</h1>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40 shadow-xs">
-                Slate on Mint
-              </span>
+             
             </div>
             <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium">
               <Calendar className="w-3.5 h-3.5 text-[#2A9D8F]" />
@@ -306,8 +304,9 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-[#2A9D8F]/20 bg-[#FFFFFF]/80 backdrop-blur-md py-4 px-6 text-center text-xs text-[#355E5F] font-medium">
-        @2026 FitTracker Pro
+      <footer className="mt-auto border-t border-[#2A9D8F]/20 bg-[#FFFFFF]/80 backdrop-blur-md py-4 px-6 text-center text-xs text-[#355E5F] font-medium flex items-center justify-center gap-2">
+        <img src="/tracker.png" alt="Logo" className="w-4 h-4 object-contain inline-block" />
+        <span>&copy; 2026 FitTracker Pro &bull; Slate on Mint</span>
       </footer>
 
       {/* Modal for Add / Edit */}
