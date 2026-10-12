@@ -45,6 +45,29 @@ function parseDateInput(inputVal) {
   return { date: isoDate, rawDate, displayDate, dayOfWeek };
 }
 
+function deriveWorkoutCategory(workout, gym) {
+  const w = (workout || '').toLowerCase().trim();
+  if (!gym || ['nil', 'rest', 'off', 'pending', ''].includes(w)) {
+    return 'Rest';
+  }
+  if (w.includes('leg') || w.includes('squat') || w.includes('quad') || w.includes('hamstring') || w.includes('calf') || w.includes('lower')) {
+    return 'Legs & Lower Body';
+  }
+  if (w.includes('shoulder') && (w.includes('back') || !w.includes('chest'))) {
+    return 'Shoulders';
+  }
+  if (w.includes('chest') || w.includes('tricep') || (w.includes('push') && !w.includes('pull'))) {
+    return 'Chest & Triceps';
+  }
+  if (w.includes('back') || w.includes('lat') || w.includes('bice') || w.includes('pull')) {
+    return 'Back & Biceps';
+  }
+  if (w.includes('box') || w.includes('abs') || w.includes('core')) {
+    return 'Core & Boxing';
+  }
+  return 'Other';
+}
+
 export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
   const [formData, setFormData] = useState({
     date: '',
@@ -149,6 +172,7 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
       rawDate: parsed.rawDate || formData.rawDate,
       displayDate: parsed.displayDate || formData.displayDate,
       dayOfWeek: parsed.dayOfWeek || formData.dayOfWeek,
+      workoutCategory: formData.workoutCategory || deriveWorkoutCategory(formData.workout, formData.gym)
     });
     onClose();
   };

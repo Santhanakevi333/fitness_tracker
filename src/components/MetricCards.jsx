@@ -24,7 +24,7 @@ export function MetricCards({ data }) {
     {
       title: 'Current Weight',
       value: `${currentWeight} kg`,
-      sub: `${weightDiff >= 0 ? '+' : ''}${weightDiff} kg over 16 days`,
+      sub: `${weightDiff >= 0 ? '+' : ''}${weightDiff} kg over ${totalDays} days`,
       badge: 'Stable Range',
       badgeColor: 'bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40',
       icon: Scale,

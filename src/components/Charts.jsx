@@ -381,9 +381,95 @@ export function ProteinIntakeChart({ data }) {
   );
 }
 
-// 4. Workout Distribution & Leg Alert
-export function WorkoutDistribution({ distribution }) {
-  const total = distribution.reduce((sum, item) => sum + item.count, 0);
+// 4. Workout Distribution & Leg Alert (Dynamically calculated from live tracked data)
+export function WorkoutDistribution({ data, distribution }) {
+  // If data is provided, calculate distribution dynamically from actual tracked logs
+  const computedDistribution = React.useMemo(() => {
+    if (!data || data.length === 0) {
+      return distribution || [];
+    }
+
+    const counts = {
+      'Chest & Triceps': 0,
+      'Back & Biceps': 0,
+      'Shoulders': 0,
+      'Legs & Lower Body': 0,
+      'Core & Boxing': 0,
+      'Rest / Active Recovery': 0,
+      'Other / Full Body': 0
+    };
+
+    data.forEach(d => {
+      const rawWorkout = (d.workout || '').toLowerCase().trim();
+      const rawCat = (d.workoutCategory || '').toLowerCase().trim();
+      const isGym = d.gym === true || (d.gym !== false && !['nil', 'rest', 'off', 'pending', ''].includes(rawWorkout));
+
+      if (!isGym || ['nil', 'rest', 'off', 'pending', ''].includes(rawWorkout) || rawCat === 'rest' || rawCat === 'pending') {
+        counts['Rest / Active Recovery']++;
+        return;
+      }
+
+      if (rawCat === 'legs & shoulders' || rawCat.includes('leg') || rawWorkout.includes('leg') || rawWorkout.includes('squat') || rawWorkout.includes('quad') || rawWorkout.includes('hamstring') || rawWorkout.includes('calf') || rawWorkout.includes('lower')) {
+        counts['Legs & Lower Body']++;
+      } else if (rawCat === 'shoulders & back' || rawCat === 'shoulders' || (rawWorkout.includes('shoulder') && !rawWorkout.includes('chest'))) {
+        counts['Shoulders']++;
+      } else if (rawCat === 'chest & triceps' || rawCat === 'chest & shoulders' || rawWorkout.includes('chest') || rawWorkout.includes('tricep') || (rawWorkout.includes('push') && !rawWorkout.includes('pull'))) {
+        counts['Chest & Triceps']++;
+      } else if (rawCat === 'back & biceps' || rawWorkout.includes('back') || rawWorkout.includes('lat') || rawWorkout.includes('bice') || rawWorkout.includes('pull')) {
+        counts['Back & Biceps']++;
+      } else if (rawCat === 'core & boxing' || rawWorkout.includes('box') || rawWorkout.includes('abs') || rawWorkout.includes('core')) {
+        counts['Core & Boxing']++;
+      } else {
+        counts['Other / Full Body']++;
+      }
+    });
+
+    const categoryMetadata = [
+      { name: 'Chest & Triceps', color: '#2A9D8F' },
+      { name: 'Back & Biceps', color: '#0F3D3E' },
+      { name: 'Shoulders', color: '#3AAFA9' },
+      { name: 'Core & Boxing', color: '#52B788' },
+      { name: 'Legs & Lower Body', color: '#E76F51' },
+      { name: 'Rest / Active Recovery', color: '#8EAF9D' },
+      { name: 'Other / Full Body', color: '#4D7C8A' }
+    ];
+
+    return categoryMetadata
+      .map(cat => ({
+        name: cat.name,
+        count: counts[cat.name] || 0,
+        color: cat.color
+      }))
+      .filter(cat => cat.count > 0 || cat.name !== 'Other / Full Body');
+  }, [data, distribution]);
+
+  const activeDistribution = computedDistribution && computedDistribution.length > 0
+    ? computedDistribution
+    : (distribution || []);
+
+  const totalSessions = data && data.length > 0
+    ? data.length
+    : activeDistribution.reduce((sum, item) => sum + item.count, 0);
+
+  // Dynamic calculations for the lower muscle alert banner
+  const legDays = (data || []).filter(d => {
+    if (!d.gym) return false;
+    const w = (d.workout || '').toLowerCase();
+    const c = (d.workoutCategory || '').toLowerCase();
+    return c.includes('leg') || w.includes('leg') || w.includes('squat') || w.includes('quad') || w.includes('hamstring') || w.includes('calf') || w.includes('lower');
+  });
+
+  const upperDays = (data || []).filter(d => {
+    if (!d.gym) return false;
+    const w = (d.workout || '').toLowerCase();
+    const c = (d.workoutCategory || '').toLowerCase();
+    return c.includes('chest') || c.includes('back') || c.includes('shoulder') ||
+           w.includes('chest') || w.includes('tricep') || w.includes('back') || w.includes('lat') || w.includes('bice') || w.includes('shoulder') || w.includes('delt') || w.includes('push') || w.includes('pull');
+  });
+
+  const legCount = legDays.length;
+  const upperCount = upperDays.length;
+  const legDates = legDays.map(d => d.displayDate || d.date).filter(Boolean).join(', ');
 
   return (
     <div className="theme-box rounded-2xl p-5">
@@ -392,12 +478,14 @@ export function WorkoutDistribution({ distribution }) {
           <Dumbbell className="w-5 h-5 text-[#2A9D8F]" />
           <h3 className="font-bold text-[#0F3D3E] text-base">Training Split Breakdown</h3>
         </div>
-        <span className="text-xs text-[#355E5F] font-medium">16 Tracked Sessions</span>
+        <span className="text-xs text-[#355E5F] font-semibold bg-[#E8F5E9] px-2.5 py-1 rounded-full border border-[#2A9D8F]/30">
+          {totalSessions} Tracked Sessions
+        </span>
       </div>
 
       <div className="space-y-3 my-3">
-        {distribution.map((item) => {
-          const pct = Math.round((item.count / total) * 100);
+        {activeDistribution.map((item) => {
+          const pct = totalSessions > 0 ? Math.round((item.count / totalSessions) * 100) : 0;
           return (
             <div key={item.name} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
@@ -418,13 +506,26 @@ export function WorkoutDistribution({ distribution }) {
         })}
       </div>
 
-      {/* Routine advice banner for legs */}
+      {/* Dynamic routine advice banner for legs */}
       <div className="mt-4 p-3 bg-[#E8F5E9] border border-[#2A9D8F]/40 rounded-xl flex items-start gap-2.5 shadow-xs">
         <AlertTriangle className="w-4 h-4 text-[#2A9D8F] shrink-0 mt-0.5" />
         <div className="text-xs">
-          <p className="font-bold text-[#0F3D3E]">Under-trained Muscle Group Focus: Legs</p>
+          <p className="font-bold text-[#0F3D3E]">
+            {legCount <= 2 ? 'Under-trained Muscle Group Focus: Legs' : 'Training Split Balance: Great Routine'}
+          </p>
           <p className="text-[#355E5F] mt-0.5">
-            Legs were hit only <strong>1 time in 16 days</strong> (on Sep 24). Upper push/pull was hit 8 times. Adding a dedicated leg day improves metabolic balance and posture.
+            {legCount === 0 && (
+              <>Legs have not been trained yet across <strong>{totalSessions} days</strong>. Upper body was hit <strong>{upperCount} times</strong>. Adding a dedicated leg day improves metabolic balance, lower body power, and posture.</>
+            )}
+            {legCount === 1 && (
+              <>Legs were hit only <strong>1 time in {totalSessions} days</strong>{legDates ? ` (on ${legDates})` : ''}. Upper push/pull was hit <strong>{upperCount} times</strong>. Adding a dedicated leg day improves metabolic balance and posture.</>
+            )}
+            {legCount === 2 && (
+              <>Legs were hit <strong>2 times in {totalSessions} days</strong>{legDates ? ` (${legDates})` : ''} vs <strong>{upperCount}</strong> upper body sessions. Aim for at least 1 leg session every 4–5 days for optimal muscular symmetry.</>
+            )}
+            {legCount > 2 && (
+              <>Legs trained <strong>{legCount} times in {totalSessions} days</strong>{legDates ? ` (${legDates})` : ''}. Upper body hit <strong>{upperCount} times</strong>. Full-body split distribution is consistent and balanced!</>
+            )}
           </p>
         </div>
       </div>
