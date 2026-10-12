@@ -403,13 +403,13 @@ export function AIMealVoiceScannerModal({ isOpen, onClose, onApplyToLog, current
                               setIsAnalyzingPhoto(false);
                             }
                           }}
-                          className="px-3 py-1 bg-white border border-red-300 rounded-lg text-[11px] font-bold text-[#0F3D3E] hover:bg-gray-50 transition-all shadow-xs"
+                          className="px-3.5 py-1.5 bg-[#2A9D8F] text-white rounded-lg text-xs font-bold hover:bg-[#238276] transition-all shadow-xs"
                         >
-                          Try Demo Scan
+                          Instant Meal Scan
                         </button>
                         <button
                           onClick={() => setActiveTab('settings')}
-                          className="px-3 py-1 bg-[#0F3D3E] text-white rounded-lg text-[11px] font-bold hover:bg-[#1a5b5c] transition-all"
+                          className="px-3 py-1.5 bg-[#0F3D3E] text-white rounded-lg text-xs font-bold hover:bg-[#1a5b5c] transition-all"
                         >
                           Check API Key
                         </button>
@@ -684,11 +684,18 @@ export function AIMealVoiceScannerModal({ isOpen, onClose, onApplyToLog, current
               <div className="p-4 bg-[#F0F9F4] border border-[#2A9D8F]/30 rounded-2xl space-y-3">
                 <div className="flex items-center gap-2">
                   <Key className="w-5 h-5 text-[#2A9D8F]" />
-                  <h4 className="font-bold text-[#0F3D3E] text-sm">Google Gemini 1.5 Flash API Key</h4>
+                  <h4 className="font-bold text-[#0F3D3E] text-sm">Google Gemini API Key</h4>
                 </div>
                 <p className="text-xs text-[#355E5F] leading-relaxed">
-                  Powers the multimodal food image recognition and voice transcript parsing. Free tier provides up to <strong>15 requests per minute</strong> at no cost.
+                  Powers multimodal food image recognition and voice transcript parsing. Free tier provides up to <strong>15 requests per minute</strong> at no cost.
                 </p>
+
+                <div className="p-3 bg-[#E8F5E9] rounded-xl border border-[#2A9D8F]/30 text-xs text-[#0F3D3E]">
+                  <p className="font-bold text-[#0F3D3E]">Important Tip for Google AI Studio:</p>
+                  <p className="text-[#355E5F] mt-0.5">
+                    Key create pannum podhu <strong>&ldquo;Create API key in NEW project&rdquo;</strong> select pannunga. Existing GCP project select panna Google Generative Language API block aagalaam.
+                  </p>
+                </div>
 
                 <div className="space-y-2 pt-2">
                   <label className="text-xs font-bold text-[#0F3D3E]">Enter your API Key</label>
