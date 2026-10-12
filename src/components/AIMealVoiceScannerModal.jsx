@@ -236,7 +236,7 @@ export function AIMealVoiceScannerModal({ isOpen, onClose, onApplyToLog, current
               <h3 className="font-extrabold text-[#0F3D3E] text-base sm:text-lg flex items-center gap-2">
                 AI Smart Logger
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2A9D8F] border border-[#2A9D8F]/30">
-                  Gemini 1.5
+                  Gemini 2.5
                 </span>
               </h3>
               <p className="text-xs text-[#355E5F]">Scan meal photos or speak to log workouts & macros</p>

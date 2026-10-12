@@ -1,4 +1,4 @@
-// Service for Gemini Multimodal Vision & Voice/Text Parsing with Auto-Discovery & Multi-Model Fallback
+// Service for Gemini Multimodal Vision & Voice/Text Parsing with Auto-Discovery & Dynamic Model Switching
 
 const STORAGE_KEY = 'fit_tracker_gemini_api_key';
 
@@ -14,7 +14,7 @@ export function storeApiKey(key) {
   try {
     if (key && key.trim()) {
       localStorage.setItem(STORAGE_KEY, key.trim());
-      cachedWorkingEndpoint = null; // reset cached endpoint on new key
+      cachedWorkingEndpoint = null;
     } else {
       localStorage.removeItem(STORAGE_KEY);
       cachedWorkingEndpoint = null;
@@ -52,15 +52,15 @@ function cleanJsonString(str) {
   return cleaned.trim();
 }
 
-// Fallback endpoints to try in order if auto-discovery fails
+// Candidate endpoints to try in order (gemini-2.5-flash is current standard)
 const CANDIDATE_ENDPOINTS = [
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-  'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent',
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
-  'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent'
 ];
 
 let cachedWorkingEndpoint = null;
@@ -80,10 +80,11 @@ async function discoverWorkingEndpoint(apiKey) {
 
       // Preferred order of flash models
       const preferred = [
-        'gemini-2.0-flash',
+        'gemini-2.5-flash',
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
-        'gemini-1.5-flash-8b',
+        'gemini-2.0-flash',
+        'gemini-2.5-pro',
         'gemini-1.5-pro'
       ];
 
@@ -100,13 +101,13 @@ async function discoverWorkingEndpoint(apiKey) {
       }
     }
   } catch (e) {
-    console.warn('Auto-discovering Gemini models failed, falling back to candidates list:', e);
+    console.warn('Auto-discovering Gemini models failed, falling back to candidate list:', e);
   }
 
   return null;
 }
 
-// Resilient API executor with automatic model failover
+// Resilient API executor with automatic model failover & dynamic recommendation extraction
 async function executeGeminiRequest(apiKey, requestBody) {
   const discovered = await discoverWorkingEndpoint(apiKey);
   const endpointsToTry = discovered
@@ -134,13 +135,41 @@ async function executeGeminiRequest(apiKey, requestBody) {
       const errMsg = errJson?.error?.message || `HTTP ${res.status}`;
       lastError = new Error(errMsg);
 
-      // If it's a 404 (model not found) or unsupported model, try next candidate model
-      if (res.status === 404 || errMsg.toLowerCase().includes('not found') || errMsg.toLowerCase().includes('not supported')) {
-        continue;
+      // Check if Google returned a direct recommendation: "Please update your code to use models/XXX"
+      const recMatch = errMsg.match(/use models\/([a-zA-Z0-9.-]+)/i);
+      if (recMatch && recMatch[1]) {
+        const recommendedModel = recMatch[1];
+        try {
+          const recUrl = `https://generativelanguage.googleapis.com/v1beta/models/${recommendedModel}:generateContent?key=${apiKey}`;
+          const recRes = await fetch(recUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          if (recRes.ok) {
+            const recData = await recRes.json();
+            cachedWorkingEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${recommendedModel}:generateContent`;
+            return recData;
+          }
+        } catch {
+          // continue fallback loop
+        }
+      }
+
+      // Check for deprecation, not found, or unsupported errors
+      const isRecoverableError =
+        res.status === 404 ||
+        errMsg.toLowerCase().includes('not found') ||
+        errMsg.toLowerCase().includes('not supported') ||
+        errMsg.toLowerCase().includes('no longer available') ||
+        errMsg.toLowerCase().includes('deprecated') ||
+        errMsg.toLowerCase().includes('retired');
+
+      if (isRecoverableError) {
+        continue; // Try next candidate model
       } else if (res.status === 400 && (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID'))) {
         throw new Error('Invalid Gemini API Key. Please verify your key in API Setup tab.');
       } else {
-        // Continue trying another model in case it's a model-specific configuration
         continue;
       }
     } catch (e) {
@@ -151,7 +180,7 @@ async function executeGeminiRequest(apiKey, requestBody) {
     }
   }
 
-  throw lastError || new Error('No compatible Gemini model found for this API key. You can use Demo Mode in the meantime.');
+  throw lastError || new Error('No compatible Gemini model found. You can use Demo Scan in the meantime.');
 }
 
 /**
@@ -165,32 +194,32 @@ export async function analyzeMealPhoto({ base64Data, mimeType, apiKey }) {
     await new Promise((r) => setTimeout(r, 1200));
     return {
       isDemo: true,
-      mealName: 'Grilled Chicken, Steamed Rice & Veggies (Demo Scan)',
+      mealName: 'Chicken Biryani & Rice Bowl (Demo Scan)',
       foods: [
-        { name: 'Grilled Chicken Breast', portion: '160g', calories: 260, protein: 48, carbs: 0, fat: 6, fiber: 0 },
-        { name: 'White Basmati Rice', portion: '1.2 cups (180g)', calories: 235, protein: 5, carbs: 51, fat: 0.5, fiber: 1 },
-        { name: 'Steamed Broccoli & Carrots', portion: '120g', calories: 45, protein: 3, carbs: 8, fat: 0.5, fiber: 4 }
+        { name: 'Chicken Leg & Breast', portion: '200g', calories: 330, protein: 46, carbs: 0, fat: 14, fiber: 0 },
+        { name: 'Spiced Biryani Rice', portion: '1.5 cups (220g)', calories: 310, protein: 6, carbs: 62, fat: 4, fiber: 2 },
+        { name: 'Cooked Spices & Garnish', portion: '30g', calories: 25, protein: 1, carbs: 4, fat: 0.5, fiber: 1.5 }
       ],
-      totalCalories: 540,
-      totalProtein: 56,
-      totalCarbs: 59,
-      totalFat: 7,
-      totalFiber: 5,
+      totalCalories: 665,
+      totalProtein: 53,
+      totalCarbs: 66,
+      totalFat: 18.5,
+      totalFiber: 3.5,
       confidence: 'high',
-      tips: 'Outstanding muscle-building meal! High protein (56g) with quality complex carbs for glycogen replenishment.'
+      tips: 'High protein meal with substantial energy from rice! Perfect post-workout meal for muscle synthesis.'
     };
   }
 
   const prompt = `You are an elite sports nutritionist and computer vision nutrition analyzer.
 Analyze this meal photo with maximum precision.
-Identify each food item on the plate.
-Estimate standard portion sizes in grams or cups based on visible plate proportions.
+Identify each food item on the plate (e.g. rice, chicken, vegetables, curry, bread).
+Estimate standard portion sizes in grams or cups based on visible proportions.
 Calculate calories, protein (g), carbs (g), fat (g), and dietary fiber (g) for each food item.
 Compute total calories and total macros.
 
 Return ONLY a raw JSON object (no markdown, no backticks, no explanations) with this exact schema:
 {
-  "mealName": "Descriptive title of meal",
+  "mealName": "Descriptive title of meal (e.g. Chicken Biryani / Rice Bowl)",
   "foods": [
     {
       "name": "Food item name",
