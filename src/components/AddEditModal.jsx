@@ -77,19 +77,19 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="bg-gradient-to-b from-[#140000] to-[#080000] border border-[#830000] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-black p-6">
-        <div className="flex items-center justify-between pb-4 border-b border-[#830000]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F3D3E]/50 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-[#FFFFFF] border border-[#2A9D8F]/30 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl shadow-[#0F3D3E]/15 p-6">
+        <div className="flex items-center justify-between pb-4 border-b border-[#2A9D8F]/20">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#FF0000] shadow-sm shadow-[#FF0000]"></span>
+            <h3 className="text-base font-bold text-[#0F3D3E] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F]"></span>
               {initialData ? 'Edit Fitness Log' : 'Add New Daily Log'}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">Record daily workout, nutrition, sleep, and measurements</p>
+            <p className="text-xs text-[#355E5F] mt-0.5">Record daily workout, nutrition, sleep, and measurements</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-[#830000]/40 transition-colors"
+            className="p-1 rounded-lg text-[#355E5F] hover:text-[#0F3D3E] hover:bg-[#E8F5E9] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,36 +99,36 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
           {/* Row 1: Date, Wake Up, Weight */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Date (YYYY-MM-DD)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Date (YYYY-MM-DD)</label>
               <input
                 type="text"
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
                 required
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Wake Up Time</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Wake Up Time</label>
               <input
                 type="text"
                 name="wakeUp"
                 value={formData.wakeUp}
                 onChange={handleChange}
                 placeholder="08:00 AM"
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Weight (kg)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Weight (kg)</label>
               <input
                 type="number"
                 step="0.1"
                 name="weight"
                 value={formData.weight}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
           </div>
@@ -136,41 +136,41 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
           {/* Row 2: Water, Steps, Sleep */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Water Intake (L)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Water Intake (L)</label>
               <input
                 type="number"
                 step="0.5"
                 name="water"
                 value={formData.water}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Steps Count</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Steps Count</label>
               <input
                 type="number"
                 name="steps"
                 value={formData.steps}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Sleep (hrs)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Sleep (hrs)</label>
               <input
                 type="number"
                 step="0.5"
                 name="sleep"
                 value={formData.sleep}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F] focus:ring-1 focus:ring-[#2A9D8F]"
               />
             </div>
           </div>
 
           {/* Row 3: Gym checks and workout */}
-          <div className="bg-[#120000] p-3 rounded-xl border border-[#830000] space-y-3">
+          <div className="bg-[#F0F9F4] p-3 rounded-xl border border-[#2A9D8F]/25 space-y-3">
             <div className="flex flex-wrap items-center gap-5">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -178,9 +178,9 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
                   name="gym"
                   checked={formData.gym}
                   onChange={handleChange}
-                  className="w-4 h-4 rounded text-[#FF0000] focus:ring-0 bg-[#000000] border-[#830000] accent-[#FF0000]"
+                  className="w-4 h-4 rounded text-[#2A9D8F] focus:ring-0 bg-[#FFFFFF] border-[#2A9D8F]/40 accent-[#2A9D8F]"
                 />
-                <span className="font-bold text-white">Gym Session?</span>
+                <span className="font-bold text-[#0F3D3E]">Gym Session?</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -189,9 +189,9 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
                   name="boxing"
                   checked={formData.boxing}
                   onChange={handleChange}
-                  className="w-4 h-4 rounded text-[#FF0000] focus:ring-0 bg-[#000000] border-[#830000] accent-[#FF0000]"
+                  className="w-4 h-4 rounded text-[#2A9D8F] focus:ring-0 bg-[#FFFFFF] border-[#2A9D8F]/40 accent-[#2A9D8F]"
                 />
-                <span className="text-gray-300 font-medium">Boxing</span>
+                <span className="text-[#355E5F]">Boxing</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -200,13 +200,13 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
                   name="abs"
                   checked={formData.abs}
                   onChange={handleChange}
-                  className="w-4 h-4 rounded text-[#FF0000] focus:ring-0 bg-[#000000] border-[#830000] accent-[#FF0000]"
+                  className="w-4 h-4 rounded text-[#2A9D8F] focus:ring-0 bg-[#FFFFFF] border-[#2A9D8F]/40 accent-[#2A9D8F]"
                 />
-                <span className="text-gray-300 font-medium">Abs</span>
+                <span className="text-[#355E5F]">Abs</span>
               </label>
 
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-gray-300 font-medium">Energy (1-5):</span>
+                <span className="text-[#355E5F] font-medium">Energy (1-5):</span>
                 <input
                   type="number"
                   step="0.5"
@@ -215,20 +215,20 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
                   name="energy"
                   value={formData.energy}
                   onChange={handleChange}
-                  className="w-16 bg-[#000000] border border-[#830000] rounded-lg px-2 py-1 text-center text-[#FF0000] font-bold"
+                  className="w-16 bg-[#FFFFFF] border border-[#2A9D8F]/30 rounded-lg px-2 py-1 text-center text-[#0F3D3E] font-bold"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Workout Details</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Workout Details</label>
               <input
                 type="text"
                 name="workout"
                 value={formData.workout}
                 onChange={handleChange}
                 placeholder="e.g. Chest & Triceps, Leg day, Back & Biceps"
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#FFFFFF] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>
           </div>
@@ -236,72 +236,72 @@ export function AddEditModal({ isOpen, onClose, onSave, initialData }) {
           {/* Row 4: Nutrition */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Calories Eaten</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Calories Eaten</label>
               <input
                 type="number"
                 name="caloriesEaten"
                 value={formData.caloriesEaten}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Calories Goal</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Calories Goal</label>
               <input
                 type="number"
                 name="caloriesGoal"
                 value={formData.caloriesGoal}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Protein Eaten (g)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Protein Eaten (g)</label>
               <input
                 type="number"
                 name="proteinEaten"
                 value={formData.proteinEaten}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-medium mb-1">Fiber (g)</label>
+              <label className="block text-[#0F3D3E] font-medium mb-1">Fiber (g)</label>
               <input
                 type="number"
                 name="fiber"
                 value={formData.fiber}
                 onChange={handleChange}
-                className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+                className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
               />
             </div>
           </div>
 
           {/* Row 5: Notes */}
           <div>
-            <label className="block text-gray-300 font-medium mb-1">Notes / Tags</label>
+            <label className="block text-[#0F3D3E] font-medium mb-1">Notes / Tags</label>
             <input
               type="text"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               placeholder="e.g. two time, movie ponen, bike service, off leave"
-              className="w-full bg-[#000000] border border-[#830000] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#FF0000]"
+              className="w-full bg-[#F8FCF9] border border-[#2A9D8F]/30 rounded-xl px-3 py-2 text-[#0F3D3E] focus:outline-none focus:border-[#2A9D8F]"
             />
           </div>
 
           {/* Footer actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#830000]">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2A9D8F]/20">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-[#180000] hover:bg-[#2b0000] text-white border border-[#830000] rounded-xl font-medium transition-colors"
+              className="px-4 py-2 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#355E5F] border border-[#2A9D8F]/30 rounded-xl font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-gradient-to-r from-[#FF0000] via-[#BC0202] to-[#830000] hover:from-[#ff2b2b] hover:to-[#a30000] text-white rounded-xl font-bold shadow-lg shadow-[#FF0000]/30 flex items-center gap-1.5 transition-all hover:scale-[1.02]"
+              className="px-5 py-2 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl font-bold shadow-md shadow-[#2A9D8F]/25 flex items-center gap-1.5 transition-all hover:scale-[1.02]"
             >
               <Check className="w-4 h-4" />
               <span>Save Entry</span>

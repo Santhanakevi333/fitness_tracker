@@ -63,24 +63,24 @@ export function DataTable({ data, onEditRow, onAddRow }) {
   };
 
   return (
-    <div className="theme-box rounded-2xl shadow-2xl overflow-hidden">
+    <div className="theme-box rounded-2xl shadow-sm overflow-hidden">
       {/* Table Toolbar */}
-      <div className="p-4 border-b border-[#830000] flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 border-b border-[#2A9D8F]/20 flex flex-wrap items-center justify-between gap-3 bg-[#FFFFFF]">
         <div className="flex flex-wrap items-center gap-2">
           {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 text-[#FF0000] absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[#2A9D8F] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Search date, workout, note..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-3 py-1.5 bg-[#000000] border border-[#830000] rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FF0000] w-52 sm:w-64"
+              className="pl-9 pr-3 py-1.5 bg-[#F0F9F4] border border-[#2A9D8F]/30 rounded-xl text-xs text-[#0F3D3E] placeholder-[#355E5F]/60 focus:outline-none focus:border-[#2A9D8F] w-52 sm:w-64"
             />
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-1 theme-box-sub p-1 rounded-xl text-xs">
+          <div className="flex items-center gap-1 theme-box-sub p-1 rounded-xl text-xs border border-[#2A9D8F]/20">
             {[
               { id: 'all', label: 'All (17)' },
               { id: 'gym', label: 'Gym Days' },
@@ -93,8 +93,8 @@ export function DataTable({ data, onEditRow, onAddRow }) {
                 onClick={() => setFilterType(pill.id)}
                 className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
                   filterType === pill.id
-                    ? 'bg-gradient-to-r from-[#FF0000] to-[#830000] text-white shadow-sm shadow-[#FF0000]/30'
-                    : 'text-gray-300 hover:text-white hover:bg-[#3d0000]'
+                    ? 'bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] text-white shadow-xs'
+                    : 'text-[#355E5F] hover:text-[#0F3D3E] hover:bg-[#E8F5E9]'
                 }`}
               >
                 {pill.label}
@@ -107,14 +107,14 @@ export function DataTable({ data, onEditRow, onAddRow }) {
         <div className="flex items-center gap-2">
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#140000] hover:bg-[#260000] border border-[#830000] text-white rounded-xl text-xs font-bold transition-all shadow-md"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] border border-[#2A9D8F]/30 text-[#0F3D3E] rounded-xl text-xs font-bold transition-all shadow-xs"
           >
-            <Download className="w-3.5 h-3.5 text-[#FF0000]" />
+            <Download className="w-3.5 h-3.5 text-[#2A9D8F]" />
             <span>Export CSV</span>
           </button>
           <button
             onClick={onAddRow}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#FF0000] to-[#BC0202] hover:from-[#ff2b2b] hover:to-[#d40202] text-white rounded-xl text-xs font-bold shadow-lg shadow-[#FF0000]/30 transition-all hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:scale-[1.02]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Log</span>
@@ -126,7 +126,7 @@ export function DataTable({ data, onEditRow, onAddRow }) {
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-[#000000] border-b border-[#830000] text-gray-300 font-bold">
+            <tr className="bg-[#0F3D3E] border-b border-[#0F3D3E] text-white font-bold">
               <th className="py-3 px-3.5 whitespace-nowrap">Date</th>
               <th className="py-3 px-2.5 whitespace-nowrap">Wake Up</th>
               <th className="py-3 px-2.5 whitespace-nowrap">Weight</th>
@@ -145,10 +145,10 @@ export function DataTable({ data, onEditRow, onAddRow }) {
               <th className="py-3 px-2 whitespace-nowrap text-center">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#830000]/40 text-white font-medium">
+          <tbody className="divide-y divide-[#2A9D8F]/15 text-[#0F3D3E] font-medium bg-[#FFFFFF]">
             {filteredData.length === 0 ? (
               <tr>
-                <td colSpan="16" className="py-8 text-center text-[#FF0000] font-bold">
+                <td colSpan="16" className="py-8 text-center text-[#355E5F] font-bold">
                   No records match your search or filter.
                 </td>
               </tr>
@@ -160,28 +160,28 @@ export function DataTable({ data, onEditRow, onAddRow }) {
                 return (
                   <tr
                     key={row.id}
-                    className="hover:bg-[#200000]/90 transition-colors group"
+                    className="hover:bg-[#E8F5E9]/50 transition-colors group"
                   >
                     {/* Date */}
                     <td className="py-2.5 px-3.5 font-medium whitespace-nowrap">
                       <div className="flex flex-col">
-                        <span className="text-white font-bold">{row.displayDate}</span>
-                        <span className="text-[10px] text-gray-400 font-mono">{row.rawDate}</span>
+                        <span className="text-[#0F3D3E] font-bold">{row.displayDate}</span>
+                        <span className="text-[10px] text-[#355E5F] font-mono">{row.rawDate}</span>
                       </div>
                     </td>
 
                     {/* Wake Up */}
-                    <td className="py-2.5 px-2.5 whitespace-nowrap text-gray-300 font-mono text-[11px]">
+                    <td className="py-2.5 px-2.5 whitespace-nowrap text-[#355E5F] font-mono text-[11px]">
                       {row.wakeUp || '-'}
                     </td>
 
                     {/* Weight */}
-                    <td className="py-2.5 px-2.5 whitespace-nowrap font-bold text-[#FF0000]">
+                    <td className="py-2.5 px-2.5 whitespace-nowrap font-bold text-[#0F3D3E]">
                       {row.weight ? `${row.weight} kg` : '-'}
                     </td>
 
                     {/* Water */}
-                    <td className="py-2.5 px-2.5 whitespace-nowrap font-bold text-white">
+                    <td className="py-2.5 px-2.5 whitespace-nowrap font-bold text-[#2A9D8F]">
                       {row.water ? `${row.water} L` : '-'}
                     </td>
 
@@ -189,26 +189,26 @@ export function DataTable({ data, onEditRow, onAddRow }) {
                     <td className="py-2.5 px-2.5 whitespace-nowrap">
                       {row.steps ? (
                         <div className="flex items-center gap-1 font-mono">
-                          <span className={row.steps >= 10000 ? 'text-[#FF0000] font-extrabold' : 'text-white'}>
+                          <span className={row.steps >= 10000 ? 'text-[#2A9D8F] font-extrabold' : 'text-[#0F3D3E]'}>
                             {row.steps.toLocaleString()}
                           </span>
                           {row.stepsIsEstimated && (
-                            <span className="text-[9px] text-white bg-[#830000]/60 px-1 rounded border border-[#830000]">est</span>
+                            <span className="text-[9px] text-[#0F3D3E] bg-[#E8F5E9] px-1 rounded border border-[#2A9D8F]/30">est</span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-gray-500">-</span>
+                        <span className="text-gray-400">-</span>
                       )}
                     </td>
 
                     {/* Gym Y/N */}
                     <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                       {row.gym ? (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-[#FF0000]/20 text-[#FF0000] border border-[#FF0000]/50 shadow-sm shadow-[#FF0000]/25">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40">
                           YES
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#140000] text-gray-400 border border-[#830000]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
                           REST
                         </span>
                       )}
@@ -216,60 +216,59 @@ export function DataTable({ data, onEditRow, onAddRow }) {
 
                     {/* Workout */}
                     <td className="py-2.5 px-3 max-w-[170px] truncate" title={row.workout}>
-                      <span className={row.gym ? 'text-white font-bold' : 'text-gray-500 italic'}>
+                      <span className={row.gym ? 'text-[#0F3D3E] font-semibold' : 'text-gray-400 italic'}>
                         {row.workout || 'Nil'}
                       </span>
                     </td>
 
                     {/* Boxing */}
                     <td className="py-2.5 px-2 text-center">
-                      {row.boxing ? <span className="text-[#FF0000] font-black">Y</span> : <span className="text-[#830000]">N</span>}
+                      {row.boxing ? <span className="text-[#2A9D8F] font-black">Y</span> : <span className="text-gray-300">N</span>}
                     </td>
 
                     {/* Abs */}
                     <td className="py-2.5 px-2 text-center">
-                      {row.abs ? <span className="text-[#FF0000] font-black">Y</span> : <span className="text-[#830000]">N</span>}
+                      {row.abs ? <span className="text-[#2A9D8F] font-black">Y</span> : <span className="text-gray-300">N</span>}
                     </td>
 
                     {/* Calories */}
                     <td className="py-2.5 px-2.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className={`font-black ${isDeficit ? 'text-[#FF0000]' : 'text-white'}`}>
+                        <span className={`font-black ${isDeficit ? 'text-[#2A9D8F]' : 'text-[#0F3D3E]'}`}>
                           {row.caloriesEaten || '-'}
                         </span>
-                        <span className="text-[#830000]">/</span>
-                        <span className="text-gray-400 text-[11px]">{row.caloriesGoal}</span>
+                        <span className="text-gray-300">/</span>
+                        <span className="text-[#355E5F] text-[11px]">{row.caloriesGoal}</span>
                       </div>
                     </td>
 
                     {/* Protein */}
                     <td className="py-2.5 px-2.5 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className={`font-black ${metProtein ? 'text-[#FF0000]' : 'text-gray-300'}`}>
+                        <span className={`font-black ${metProtein ? 'text-[#2A9D8F]' : 'text-[#0F3D3E]'}`}>
                           {row.proteinEaten ? `${row.proteinEaten}g` : '-'}
                         </span>
-                        <span className="text-[#830000]">/</span>
-                        <span className="text-gray-400 text-[11px]">{row.proteinGoal}g</span>
+                        <span className="text-gray-300">/</span>
+                        <span className="text-[#355E5F] text-[11px]">{row.proteinGoal}g</span>
                       </div>
                     </td>
 
                     {/* Fiber */}
-                    <td className="py-2.5 px-2 whitespace-nowrap text-white font-semibold">
+                    <td className="py-2.5 px-2 whitespace-nowrap text-[#0F3D3E] font-semibold">
                       {row.fiber ? `${row.fiber}g` : '-'}
                     </td>
 
                     {/* Sleep */}
-                    <td className="py-2.5 px-2 whitespace-nowrap text-white font-mono font-bold">
+                    <td className="py-2.5 px-2 whitespace-nowrap text-[#0F3D3E] font-mono font-bold">
                       {row.sleep ? `${row.sleep}h` : '-'}
                     </td>
 
                     {/* Energy */}
                     <td className="py-2.5 px-2 text-center whitespace-nowrap">
                       {row.energy ? (
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-black ${
-                          row.energy >= 3.5 ? 'bg-[#FF0000]/25 text-[#FF0000] border border-[#FF0000]/50 shadow-sm shadow-[#FF0000]/30' :
-                          row.energy >= 3.0 ? 'bg-[#BC0202]/30 text-white border border-[#BC0202]/50' :
-                          'bg-[#830000]/40 text-gray-300 border border-[#830000]'
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                          row.energy >= 3.5 ? 'bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40' :
+                          'bg-gray-100 text-gray-700 border border-gray-200'
                         }`}>
                           {row.energy}
                         </span>
@@ -280,7 +279,7 @@ export function DataTable({ data, onEditRow, onAddRow }) {
 
                     {/* Notes */}
                     <td className="py-2.5 px-3 max-w-[150px] truncate" title={row.notes}>
-                      <span className="bg-[#140000] px-2 py-0.5 rounded text-[10px] text-gray-200 border border-[#830000] inline-block truncate max-w-[140px] font-medium">
+                      <span className="bg-[#F0F9F4] px-2 py-0.5 rounded text-[10px] text-[#355E5F] border border-[#2A9D8F]/20 inline-block truncate max-w-[140px] font-medium">
                         {row.notes || '-'}
                       </span>
                     </td>
@@ -289,7 +288,7 @@ export function DataTable({ data, onEditRow, onAddRow }) {
                     <td className="py-2.5 px-2 text-center whitespace-nowrap">
                       <button
                         onClick={() => onEditRow(row)}
-                        className="p-1 hover:bg-[#3d0000] rounded text-gray-400 hover:text-[#FF0000] transition-colors"
+                        className="p-1 hover:bg-[#E8F5E9] rounded text-[#355E5F] hover:text-[#2A9D8F] transition-colors"
                         title="Edit Row"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -302,9 +301,9 @@ export function DataTable({ data, onEditRow, onAddRow }) {
           </tbody>
         </table>
       </div>
-      <div className="p-3 bg-[#000000] border-t border-[#830000] flex items-center justify-between text-xs text-gray-400 font-medium">
+      <div className="p-3 bg-[#F8FCF9] border-t border-[#2A9D8F]/20 flex items-center justify-between text-xs text-[#355E5F] font-medium">
         <span>Showing {filteredData.length} of {data.length} entries</span>
-        <span className="text-[#FF0000] font-bold">Terror Mode Data Pipeline Active</span>
+        <span className="text-[#0F3D3E] font-bold">Slate on Mint Data Pipeline Active</span>
       </div>
     </div>
   );

@@ -431,11 +431,11 @@ export const initialFitnessData = [
 ];
 
 export const workoutCategoryDistribution = [
-  { name: 'Chest & Triceps', count: 4, color: '#FF0000' },
-  { name: 'Back & Biceps', count: 4, color: '#BC0202' },
-  { name: 'Shoulders', count: 4, color: '#830000' },
-  { name: 'Core & Boxing', count: 1, color: '#ff4d4d' },
-  { name: 'Legs & Lower Body', count: 1, color: '#FF0000', warning: 'Under-trained! Only 1 leg day in 16 days.' },
-  { name: 'Rest / Active Recovery', count: 5, color: '#400000' }
+  { name: 'Chest & Triceps', count: 4, color: '#2A9D8F' },
+  { name: 'Back & Biceps', count: 4, color: '#0F3D3E' },
+  { name: 'Shoulders', count: 4, color: '#3AAFA9' },
+  { name: 'Core & Boxing', count: 1, color: '#52B788' },
+  { name: 'Legs & Lower Body', count: 1, color: '#E76F51', warning: 'Under-trained! Only 1 leg day in 16 days.' },
+  { name: 'Rest / Active Recovery', count: 5, color: '#8EAF9D' }
 ];
 
