@@ -6,6 +6,12 @@ import { DataTable } from './components/DataTable';
 import { AddEditModal } from './components/AddEditModal';
 import { AIFitnessCoach } from './components/AIFitnessCoach';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
+import { CloudSyncModal } from './components/CloudSyncModal';
+import {
+  isCloudConfigured,
+  fetchLogsFromCloud,
+  upsertLogRowToCloud
+} from './services/cloudDbService';
 import {
   Activity,
   Flame,
@@ -17,7 +23,8 @@ import {
   Download,
   Calendar,
   Camera,
-  Mic
+  Mic,
+  Cloud
 } from 'lucide-react';
 
 export default function App() {
@@ -47,7 +54,32 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAIScannerOpen, setIsAIScannerOpen] = useState(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudConfigured());
   const [editingRow, setEditingRow] = useState(null);
+
+  // Auto-fetch from Supabase Cloud on load if configured
+  useEffect(() => {
+    if (isCloudConfigured()) {
+      fetchLogsFromCloud()
+        .then((cloudRows) => {
+          if (cloudRows && cloudRows.length > 0) {
+            setData(cloudRows);
+            setIsCloudConnected(true);
+          }
+        })
+        .catch((err) => {
+          console.warn('Initial cloud fetch error:', err);
+        });
+    }
+  }, []);
+
+  const handleCloudSyncSuccess = (cloudLogs) => {
+    if (cloudLogs && cloudLogs.length > 0) {
+      setData(cloudLogs);
+    }
+    setIsCloudConnected(true);
+  };
 
   const handleAddRow = () => {
     setEditingRow(null);
@@ -83,6 +115,11 @@ export default function App() {
           notes: updatedNotes,
           isPartial: false
         };
+
+        if (isCloudConfigured()) {
+          upsertLogRowToCloud(updated[targetIndex]).catch((err) => console.error('Cloud upsert error:', err));
+        }
+
         return updated;
       }
 
@@ -105,6 +142,11 @@ export default function App() {
         merged.isPartial = false;
 
         updated[targetIndex] = merged;
+
+        if (isCloudConfigured()) {
+          upsertLogRowToCloud(merged).catch((err) => console.error('Cloud upsert error:', err));
+        }
+
         return updated;
       }
 
@@ -115,13 +157,20 @@ export default function App() {
   const handleSaveRow = (savedRow) => {
     setData((prev) => {
       const existsIndex = prev.findIndex((d) => d.id === savedRow.id || d.date === savedRow.date);
+      let updated;
       if (existsIndex >= 0) {
-        const updated = [...prev];
+        updated = [...prev];
         updated[existsIndex] = { ...updated[existsIndex], ...savedRow };
-        return updated.sort((a, b) => new Date(a.date) - new Date(b.date));
+        updated.sort((a, b) => new Date(a.date) - new Date(b.date));
       } else {
-        return [...prev, savedRow].sort((a, b) => new Date(a.date) - new Date(b.date));
+        updated = [...prev, savedRow].sort((a, b) => new Date(a.date) - new Date(b.date));
       }
+
+      if (isCloudConfigured()) {
+        upsertLogRowToCloud(savedRow).catch((err) => console.error('Cloud upsert error:', err));
+      }
+
+      return updated;
     });
   };
 
@@ -180,6 +229,19 @@ export default function App() {
 
         {/* Global Toolbar buttons */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCloudModalOpen(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs border ${
+              isCloudConnected
+                ? 'bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border-[#2A9D8F]/40'
+                : 'bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200'
+            }`}
+            title={isCloudConnected ? 'Cloud Database Connected (Supabase)' : 'Local Storage Only - Tap to Connect Cloud'}
+          >
+            <Cloud className={`w-3.5 h-3.5 ${isCloudConnected ? 'text-[#2A9D8F]' : 'text-orange-600'}`} />
+            <span className="hidden sm:inline">{isCloudConnected ? 'Cloud Synced' : 'Sync Cloud'}</span>
+            <span className="sm:hidden">{isCloudConnected ? 'Cloud' : 'Sync'}</span>
+          </button>
           <button
             onClick={() => setIsAIScannerOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
@@ -392,6 +454,14 @@ export default function App() {
         onClose={() => setIsAIScannerOpen(false)}
         onApplyToLog={handleApplyAIToLog}
         currentDayLog={data[data.length - 1]}
+      />
+
+      {/* Cloud Database Sync Modal */}
+      <CloudSyncModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        localData={data}
+        onSyncSuccess={handleCloudSyncSuccess}
       />
 
       {/* Mobile Floating AI Quick Action Pill */}
