@@ -5,6 +5,7 @@ import { CalorieChart, WeightTrendChart, ProteinIntakeChart, WorkoutDistribution
 import { DataTable } from './components/DataTable';
 import { AddEditModal } from './components/AddEditModal';
 import { AIFitnessCoach } from './components/AIFitnessCoach';
+import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import {
   Activity,
   Flame,
@@ -14,7 +15,9 @@ import {
   Sparkles,
   Plus,
   Download,
-  Calendar
+  Calendar,
+  Camera,
+  Mic
 } from 'lucide-react';
 
 export default function App() {
@@ -43,6 +46,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAIScannerOpen, setIsAIScannerOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
 
   const handleAddRow = () => {
@@ -53,6 +57,59 @@ export default function App() {
   const handleEditRow = (row) => {
     setEditingRow(row);
     setIsModalOpen(true);
+  };
+
+  const handleApplyAIToLog = (action) => {
+    setData((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const sorted = [...prev].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const targetIndex = sorted.length - 1; // latest/current day
+      const currentEntry = sorted[targetIndex];
+
+      if (action.type === 'photo_meal') {
+        const updated = [...sorted];
+        const newCalories = (currentEntry.caloriesEaten || 0) + (action.caloriesToAdd || 0);
+        const newProtein = (currentEntry.proteinEaten || 0) + (action.proteinToAdd || 0);
+        const newFiber = (currentEntry.fiber || 0) + (action.fiberToAdd || 0);
+        const updatedNotes = currentEntry.notes
+          ? `${currentEntry.notes} | ${action.notesAppend}`
+          : action.notesAppend;
+
+        updated[targetIndex] = {
+          ...currentEntry,
+          caloriesEaten: newCalories,
+          proteinEaten: newProtein,
+          fiber: newFiber,
+          notes: updatedNotes,
+          isPartial: false
+        };
+        return updated;
+      }
+
+      if (action.type === 'voice_log') {
+        const v = action.data;
+        const updated = [...sorted];
+        const merged = { ...currentEntry };
+
+        if (v.caloriesEaten !== null) merged.caloriesEaten = v.caloriesEaten;
+        if (v.proteinEaten !== null) merged.proteinEaten = v.proteinEaten;
+        if (v.water !== null) merged.water = v.water;
+        if (v.steps !== null) merged.steps = v.steps;
+        if (v.workout !== null) merged.workout = v.workout;
+        if (v.gym !== null) merged.gym = v.gym;
+        if (v.sleep !== null) merged.sleep = v.sleep;
+        if (v.weight !== null) merged.weight = v.weight;
+        if (v.notes) {
+          merged.notes = merged.notes ? `${merged.notes} | ${v.notes}` : v.notes;
+        }
+        merged.isPartial = false;
+
+        updated[targetIndex] = merged;
+        return updated;
+      }
+
+      return prev;
+    });
   };
 
   const handleSaveRow = (savedRow) => {
@@ -121,8 +178,18 @@ export default function App() {
           </div>
         </div>
 
-        {/* Global Toolbar buttons - Reset button removed as requested */}
+        {/* Global Toolbar buttons */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsAIScannerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
+            title="Scan Meal Photo or Voice Log Activity with AI"
+          >
+            <Camera className="w-3.5 h-3.5 text-[#2A9D8F]" />
+            <Mic className="w-3.5 h-3.5 text-[#0F3D3E]" />
+            <span className="hidden sm:inline">AI Scanner</span>
+            <span className="sm:hidden">AI Scan</span>
+          </button>
           <button
             onClick={exportJSON}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
@@ -318,6 +385,26 @@ export default function App() {
         onSave={handleSaveRow}
         initialData={editingRow}
       />
+
+      {/* AI Meal Photo Scanner & Voice Logger Modal */}
+      <AIMealVoiceScannerModal
+        isOpen={isAIScannerOpen}
+        onClose={() => setIsAIScannerOpen(false)}
+        onApplyToLog={handleApplyAIToLog}
+        currentDayLog={data[data.length - 1]}
+      />
+
+      {/* Mobile Floating AI Quick Action Pill */}
+      <div className="fixed bottom-5 right-5 sm:hidden z-40">
+        <button
+          onClick={() => setIsAIScannerOpen(true)}
+          className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] text-white rounded-full font-bold text-xs shadow-xl shadow-[#0F3D3E]/30 border border-white/20 active:scale-95 transition-transform"
+        >
+          <Camera className="w-4 h-4 text-white" />
+          <Mic className="w-4 h-4 text-white" />
+          <span>AI Scan</span>
+        </button>
+      </div>
     </div>
   );
 }
