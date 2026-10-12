@@ -380,9 +380,40 @@ export function AIMealVoiceScannerModal({ isOpen, onClose, onApplyToLog, current
                   )}
 
                   {photoError && (
-                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>{photoError}</span>
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs space-y-2">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span className="font-semibold">{photoError}</span>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={async () => {
+                            setPhotoError(null);
+                            setIsAnalyzingPhoto(true);
+                            try {
+                              const result = await analyzeMealPhoto({
+                                base64Data: selectedImage?.base64Data,
+                                mimeType: selectedImage?.mimeType,
+                                apiKey: ''
+                              });
+                              setPhotoAnalysis(result);
+                            } catch (e) {
+                              setPhotoError(e.message);
+                            } finally {
+                              setIsAnalyzingPhoto(false);
+                            }
+                          }}
+                          className="px-3 py-1 bg-white border border-red-300 rounded-lg text-[11px] font-bold text-[#0F3D3E] hover:bg-gray-50 transition-all shadow-xs"
+                        >
+                          Try Demo Scan
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('settings')}
+                          className="px-3 py-1 bg-[#0F3D3E] text-white rounded-lg text-[11px] font-bold hover:bg-[#1a5b5c] transition-all"
+                        >
+                          Check API Key
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -704,3 +735,4 @@ export function AIMealVoiceScannerModal({ isOpen, onClose, onApplyToLog, current
     </div>
   );
 }
+

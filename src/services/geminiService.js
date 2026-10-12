@@ -1,4 +1,4 @@
-// Service for Gemini 1.5 Flash Multimodal Vision & Voice/Text Parsing
+// Service for Gemini Multimodal Vision & Voice/Text Parsing with Auto-Discovery & Multi-Model Fallback
 
 const STORAGE_KEY = 'fit_tracker_gemini_api_key';
 
@@ -14,8 +14,10 @@ export function storeApiKey(key) {
   try {
     if (key && key.trim()) {
       localStorage.setItem(STORAGE_KEY, key.trim());
+      cachedWorkingEndpoint = null; // reset cached endpoint on new key
     } else {
       localStorage.removeItem(STORAGE_KEY);
+      cachedWorkingEndpoint = null;
     }
   } catch (e) {
     console.error('Failed to store API key:', e);
@@ -29,7 +31,6 @@ export function fileToBase64(file) {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const result = reader.result;
-      // Extract base64 part and mime type
       const mimeType = file.type || 'image/jpeg';
       const base64Data = result.split(',')[1];
       resolve({ base64Data, mimeType, dataUrl: result });
@@ -38,7 +39,6 @@ export function fileToBase64(file) {
   });
 }
 
-// Strip markdown code fences if Gemini returns ```json ... ```
 function cleanJsonString(str) {
   let cleaned = str.trim();
   if (cleaned.startsWith('```json')) {
@@ -52,14 +52,116 @@ function cleanJsonString(str) {
   return cleaned.trim();
 }
 
+// Fallback endpoints to try in order if auto-discovery fails
+const CANDIDATE_ENDPOINTS = [
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent',
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
+  'https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent'
+];
+
+let cachedWorkingEndpoint = null;
+
+// Dynamically discover supported models for the user's API key
+async function discoverWorkingEndpoint(apiKey) {
+  if (cachedWorkingEndpoint) return cachedWorkingEndpoint;
+
+  try {
+    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    if (listRes.ok) {
+      const data = await listRes.json();
+      const models = data.models || [];
+      const generateModels = models
+        .filter((m) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+        .map((m) => m.name.replace(/^models\//, ''));
+
+      // Preferred order of flash models
+      const preferred = [
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro'
+      ];
+
+      for (const p of preferred) {
+        if (generateModels.includes(p)) {
+          cachedWorkingEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${p}:generateContent`;
+          return cachedWorkingEndpoint;
+        }
+      }
+
+      if (generateModels.length > 0) {
+        cachedWorkingEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${generateModels[0]}:generateContent`;
+        return cachedWorkingEndpoint;
+      }
+    }
+  } catch (e) {
+    console.warn('Auto-discovering Gemini models failed, falling back to candidates list:', e);
+  }
+
+  return null;
+}
+
+// Resilient API executor with automatic model failover
+async function executeGeminiRequest(apiKey, requestBody) {
+  const discovered = await discoverWorkingEndpoint(apiKey);
+  const endpointsToTry = discovered
+    ? [discovered, ...CANDIDATE_ENDPOINTS.filter((e) => e !== discovered)]
+    : CANDIDATE_ENDPOINTS;
+
+  let lastError = null;
+
+  for (const baseUrl of endpointsToTry) {
+    try {
+      const url = `${baseUrl}?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        cachedWorkingEndpoint = baseUrl; // Cache the verified working endpoint
+        return data;
+      }
+
+      const errJson = await res.json().catch(() => ({}));
+      const errMsg = errJson?.error?.message || `HTTP ${res.status}`;
+      lastError = new Error(errMsg);
+
+      // If it's a 404 (model not found) or unsupported model, try next candidate model
+      if (res.status === 404 || errMsg.toLowerCase().includes('not found') || errMsg.toLowerCase().includes('not supported')) {
+        continue;
+      } else if (res.status === 400 && (errMsg.includes('API key') || errMsg.includes('API_KEY_INVALID'))) {
+        throw new Error('Invalid Gemini API Key. Please verify your key in API Setup tab.');
+      } else {
+        // Continue trying another model in case it's a model-specific configuration
+        continue;
+      }
+    } catch (e) {
+      lastError = e;
+      if (e.message && e.message.includes('Invalid Gemini API Key')) {
+        throw e;
+      }
+    }
+  }
+
+  throw lastError || new Error('No compatible Gemini model found for this API key. You can use Demo Mode in the meantime.');
+}
+
 /**
- * Analyze meal photo using Gemini 1.5 Flash Vision
+ * Analyze meal photo using Gemini Vision with automatic model fallback
  */
 export async function analyzeMealPhoto({ base64Data, mimeType, apiKey }) {
   const key = apiKey || getStoredApiKey();
 
   if (!key) {
-    // If no key provided, return demo simulation with helpful prompt
+    // Demo simulation
     await new Promise((r) => setTimeout(r, 1200));
     return {
       isDemo: true,
@@ -78,8 +180,6 @@ export async function analyzeMealPhoto({ base64Data, mimeType, apiKey }) {
       tips: 'Outstanding muscle-building meal! High protein (56g) with quality complex carbs for glycogen replenishment.'
     };
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
   const prompt = `You are an elite sports nutritionist and computer vision nutrition analyzer.
 Analyze this meal photo with maximum precision.
@@ -111,36 +211,27 @@ Return ONLY a raw JSON object (no markdown, no backticks, no explanations) with 
   "tips": "Actionable 1-2 sentence fitness/nutrition insight for this meal"
 }`;
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: mimeType || 'image/jpeg',
-                data: base64Data
-              }
+  const requestBody = {
+    contents: [
+      {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType || 'image/jpeg',
+              data: base64Data
             }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: 'application/json'
+          }
+        ]
       }
-    })
-  });
+    ],
+    generationConfig: {
+      temperature: 0.2,
+      responseMimeType: 'application/json'
+    }
+  };
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData?.error?.message || `Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
+  const data = await executeGeminiRequest(key, requestBody);
   const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) throw new Error('No response generated by Gemini model.');
 
@@ -149,18 +240,15 @@ Return ONLY a raw JSON object (no markdown, no backticks, no explanations) with 
 }
 
 /**
- * Parse spoken or typed voice transcript into structured fitness log
+ * Parse spoken or typed voice transcript into structured fitness log with fallback
  */
 export async function parseVoiceTranscript({ transcript, apiKey }) {
   const key = apiKey || getStoredApiKey();
 
   if (!key) {
-    // Smart heuristic fallback if no API key is set
     await new Promise((r) => setTimeout(r, 600));
     return fallbackHeuristicParser(transcript);
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
   const prompt = `You are a fitness log assistant.
 Parse this voice transcript of a person talking about their daily fitness, food, or workout:
@@ -191,29 +279,25 @@ Return ONLY a raw JSON object (no markdown, no backticks) with this structure:
   "summary": "1 sentence friendly summary of what was logged"
 }`;
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: 'application/json'
-      }
-    })
-  });
+  const requestBody = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: 'application/json'
+    }
+  };
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData?.error?.message || `Gemini API error: ${response.status}`);
+  try {
+    const data = await executeGeminiRequest(key, requestBody);
+    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('No response generated by Gemini model.');
+
+    const cleaned = cleanJsonString(rawText);
+    return JSON.parse(cleaned);
+  } catch (err) {
+    console.warn('Gemini voice parse failed, using offline fallback:', err);
+    return fallbackHeuristicParser(transcript);
   }
-
-  const data = await response.json();
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error('No response generated by Gemini model.');
-
-  const cleaned = cleanJsonString(rawText);
-  return JSON.parse(cleaned);
 }
 
 // Fallback regex / keyword parser when offline or without API key
