@@ -21,7 +21,9 @@ export function AuthModal({
   isOpen,
   onClose,
   onAuthSuccess,
-  hasLocalLogs = false
+  hasLocalLogs = false,
+  isMandatory = false,
+  onContinueAsGuest
 }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
   const [name, setName] = useState('');
@@ -46,7 +48,7 @@ export function AuthModal({
       if (mode === 'login') {
         const session = await signIn(email, password);
         onAuthSuccess(session, false);
-        onClose();
+        if (onClose) onClose();
       } else {
         const result = await signUp(email, password, name);
         if (result.needsEmailConfirmation) {
@@ -56,7 +58,7 @@ export function AuthModal({
           });
         } else if (result.session) {
           onAuthSuccess(result.session, importExisting);
-          onClose();
+          if (onClose) onClose();
         }
       }
     } catch (err) {
@@ -68,16 +70,18 @@ export function AuthModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F3D3E]/60 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F3D3E]/75 backdrop-blur-md animate-fadeIn">
       <div className="bg-[#FFFFFF] border border-[#2A9D8F]/30 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl shadow-[#0F3D3E]/20 text-[#0F3D3E]">
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#E8F5E9] via-[#F0FAF3] to-[#FFFFFF] p-6 border-b border-[#2A9D8F]/20 relative">
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#FFFFFF]/80 hover:bg-[#FFFFFF] text-[#0F3D3E] flex items-center justify-center border border-[#2A9D8F]/20 transition-all shadow-xs"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!isMandatory && onClose && (
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#FFFFFF]/80 hover:bg-[#FFFFFF] text-[#0F3D3E] flex items-center justify-center border border-[#2A9D8F]/20 transition-all shadow-xs"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
 
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center shadow-sm">
@@ -86,7 +90,7 @@ export function AuthModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#2A9D8F]/15 text-[#0F3D3E] border border-[#2A9D8F]/30">
-                  Multi-User Access
+                  {isMandatory ? 'Sign In Required' : 'Multi-User Access'}
                 </span>
               </div>
               <h2 className="text-xl font-black text-[#0F3D3E] tracking-tight mt-0.5">
@@ -260,10 +264,10 @@ export function AuthModal({
             <span className="text-[#355E5F]">Don't want to sign in?</span>
             <button
               type="button"
-              onClick={onClose}
+              onClick={onContinueAsGuest || onClose}
               className="text-[#2A9D8F] font-bold hover:underline"
             >
-              Continue as Guest &rarr;
+              Continue as Guest (Fresh Board) &rarr;
             </button>
           </div>
         </div>

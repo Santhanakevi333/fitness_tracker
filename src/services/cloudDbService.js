@@ -108,16 +108,22 @@ function fromDbRow(r) {
 }
 
 /**
- * Fetch all logs from Cloud Database (supports user-specific isolation)
+ * Fetch all logs from Cloud Database (strictly isolated per user)
  */
 export async function fetchLogsFromCloud(userSession = null) {
   const config = getCloudConfig();
-  if (!config) return null;
+  if (!config) return [];
+
+  const userId = userSession?.user?.id;
+
+  // STRICT PRIVACY GUARD: Never leak database rows to unauthenticated/guest users!
+  if (!userId) {
+    return [];
+  }
 
   const token = userSession?.access_token && !userSession.access_token.startsWith('local_')
     ? userSession.access_token
     : config.key;
-  const userId = userSession?.user?.id;
 
   const headers = {
     apikey: config.key,
@@ -125,36 +131,23 @@ export async function fetchLogsFromCloud(userSession = null) {
     'Content-Type': 'application/json'
   };
 
-  // If logged in as specific user, attempt to query only their rows
-  if (userId) {
-    const userEndpoint = `${config.url}/rest/v1/fitness_logs?select=*&user_id=eq.${encodeURIComponent(userId)}&order=date.asc`;
-    const res = await fetch(userEndpoint, { headers });
+  // Fetch only rows belonging to this authenticated user
+  const userEndpoint = `${config.url}/rest/v1/fitness_logs?select=*&user_id=eq.${encodeURIComponent(userId)}&order=date.asc`;
+  const res = await fetch(userEndpoint, { headers });
 
-    if (res.ok) {
-      const rows = await res.json();
-      return rows.map(fromDbRow);
-    }
-
-    // If user_id column doesn't exist yet in Supabase table, fallback gracefully
-    const err = await res.json().catch(() => ({}));
-    if (err.message && err.message.includes('user_id') && err.message.includes('does not exist')) {
-      console.warn('user_id column not found in Supabase table. Falling back to general logs.');
-    } else {
-      throw new Error(err.message || `Cloud fetch error: ${res.status}`);
-    }
+  if (res.ok) {
+    const rows = await res.json();
+    return rows.map(fromDbRow);
   }
 
-  // General fetch (guest or fallback)
-  const endpoint = `${config.url}/rest/v1/fitness_logs?select=*&order=date.asc`;
-  const res = await fetch(endpoint, { headers });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Cloud fetch error: ${res.status}`);
+  const err = await res.json().catch(() => ({}));
+  // If user_id column doesn't exist yet in Supabase table
+  if (err.message && err.message.includes('user_id') && err.message.includes('does not exist')) {
+    console.warn('user_id column not found in Supabase table. Please run the SQL schema migration in Supabase.');
+    return [];
   }
 
-  const rows = await res.json();
-  return rows.map(fromDbRow);
+  throw new Error(err.message || `Cloud fetch error: ${res.status}`);
 }
 
 /**

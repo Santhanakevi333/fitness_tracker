@@ -6,7 +6,6 @@ import { DataTable } from './components/DataTable';
 import { AddEditModal } from './components/AddEditModal';
 import { AIFitnessCoach } from './components/AIFitnessCoach';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
-import { CloudSyncModal } from './components/CloudSyncModal';
 import { WeeklyReview } from './components/WeeklyReview';
 import { AuthModal } from './components/AuthModal';
 import { SidebarDrawer } from './components/SidebarDrawer';
@@ -41,6 +40,7 @@ import {
 
 export default function App() {
   const [authSession, setAuthSession] = useState(() => getSavedSession());
+  const [isGuestAllowed, setIsGuestAllowed] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -62,38 +62,36 @@ export default function App() {
   const [data, setData] = useState(() => {
     try {
       const session = getSavedSession();
-      const storageKey = session?.user?.id
-        ? `fit_tracker_data_${session.user.id}`
-        : 'fit_tracker_pro_data';
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+      // Only load personal data if session is active
+      if (session?.user?.id) {
+        const userSaved = localStorage.getItem(`fit_tracker_data_${session.user.id}`);
+        if (userSaved) {
+          const parsed = JSON.parse(userSaved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
         }
-      }
-      const generalSaved = localStorage.getItem('fit_tracker_pro_data');
-      if (generalSaved) {
-        const parsedGen = JSON.parse(generalSaved);
-        if (Array.isArray(parsedGen) && parsedGen.length > 0) {
-          return parsedGen;
+        // Legacy fallback only for existing owner account
+        const generalSaved = localStorage.getItem('fit_tracker_pro_data');
+        if (generalSaved) {
+          const parsedGen = JSON.parse(generalSaved);
+          if (Array.isArray(parsedGen) && parsedGen.length > 0) {
+            return parsedGen;
+          }
         }
       }
     } catch (e) {
       console.error('Failed to load saved data:', e);
     }
-    return initialFitnessData;
+    // New or unauthenticated users start with 0 logs (no leakage of private data)
+    return [];
   });
 
   // Save data to localStorage per active user
   useEffect(() => {
     try {
-      const storageKey = authSession?.user?.id
-        ? `fit_tracker_data_${authSession.user.id}`
-        : 'fit_tracker_pro_data';
-      localStorage.setItem(storageKey, JSON.stringify(data));
-      if (!authSession?.user?.id) {
-        localStorage.setItem('fit_tracker_pro_data', JSON.stringify(data));
+      if (authSession?.user?.id) {
+        localStorage.setItem(`fit_tracker_data_${authSession.user.id}`, JSON.stringify(data));
       }
     } catch (e) {
       console.error('Failed to save data to localStorage:', e);
@@ -103,13 +101,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAIScannerOpen, setIsAIScannerOpen] = useState(false);
-  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
   const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudConfigured());
   const [editingRow, setEditingRow] = useState(null);
 
   // Auto-fetch from Supabase Cloud on load or when auth session changes
   useEffect(() => {
-    if (isCloudConfigured()) {
+    if (isCloudConfigured() && authSession?.user?.id) {
       fetchLogsFromCloud(authSession)
         .then((cloudRows) => {
           if (cloudRows && cloudRows.length > 0) {
@@ -125,9 +122,10 @@ export default function App() {
 
   const handleAuthSuccess = async (newSession, importExisting) => {
     setAuthSession(newSession);
+    setIsGuestAllowed(false);
     setIsCloudConnected(isCloudConfigured());
 
-    if (isCloudConfigured() && newSession) {
+    if (isCloudConfigured() && newSession?.user?.id) {
       try {
         const cloudRows = await fetchLogsFromCloud(newSession);
         if (cloudRows && cloudRows.length > 0) {
@@ -139,7 +137,17 @@ export default function App() {
             setData(refreshed);
           }
         } else {
-          setData(initialFitnessData);
+          // If this is the original owner and cloud is empty, check legacy local
+          const legacy = localStorage.getItem('fit_tracker_pro_data');
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setData(parsed);
+              await bulkUploadLogsToCloud(parsed, newSession);
+              return;
+            }
+          }
+          setData([]);
         }
       } catch (err) {
         console.error('Error fetching/migrating user data:', err);
@@ -151,16 +159,8 @@ export default function App() {
     await signOut();
     setAuthSession(null);
     setIsUserMenuOpen(false);
-    try {
-      const saved = localStorage.getItem('fit_tracker_pro_data');
-      if (saved) {
-        setData(JSON.parse(saved));
-      } else {
-        setData(initialFitnessData);
-      }
-    } catch (e) {
-      setData(initialFitnessData);
-    }
+    setIsGuestAllowed(false);
+    setData([]);
   };
 
   const handleCloudSyncSuccess = (cloudLogs) => {
@@ -319,6 +319,30 @@ export default function App() {
     { id: 'coach', label: 'AI Coach Insights', icon: Sparkles },
   ];
 
+  // AUTH GATE: New visitors or logged-out users are prompted to Sign In or Create Account first!
+  // Prevents leaking personal workout & macro data to unauthenticated visitors
+  if (!authSession && !isGuestAllowed) {
+    return (
+      <div className="min-h-screen bg-[#E8F5E9] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-80 h-80 bg-[#2A9D8F]/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-80 h-80 bg-[#0F3D3E]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="relative z-10 w-full max-w-md">
+          <AuthModal
+            isOpen={true}
+            isMandatory={true}
+            onContinueAsGuest={() => {
+              setIsGuestAllowed(true);
+              setData([]);
+            }}
+            onAuthSuccess={handleAuthSuccess}
+            hasLocalLogs={false}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-transparent text-[#0F3D3E] flex flex-col">
       {/* Top Navbar */}
@@ -402,9 +426,8 @@ export default function App() {
                 </span>
                 {isCloudConnected && (
                   <span
-                    onClick={() => setIsCloudModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] text-[#2A9D8F] font-bold cursor-pointer hover:underline"
-                    title="Live Cloud Sync Active (Click to manage)"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#2A9D8F] font-bold"
+                    title="Live Cloud Database Connected via Supabase"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] animate-pulse"></span>
                     Cloud
@@ -730,14 +753,6 @@ export default function App() {
         currentDayLog={data[data.length - 1]}
       />
 
-      {/* Cloud Database Sync Modal */}
-      <CloudSyncModal
-        isOpen={isCloudModalOpen}
-        onClose={() => setIsCloudModalOpen(false)}
-        localData={data}
-        onSyncSuccess={handleCloudSyncSuccess}
-      />
-
       {/* Mobile Slide-over Sidebar Drawer */}
       <SidebarDrawer
         isOpen={isSidebarOpen}
@@ -751,7 +766,6 @@ export default function App() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onSignOut={handleSignOut}
         onOpenAIScanner={() => setIsAIScannerOpen(true)}
-        onOpenCloudModal={() => setIsCloudModalOpen(true)}
         onExportJSON={exportJSON}
         onImportJSONClick={() => jsonInputRef.current?.click()}
         onAddRow={handleAddRow}

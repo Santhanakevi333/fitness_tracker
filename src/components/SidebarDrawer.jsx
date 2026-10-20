@@ -28,7 +28,6 @@ export function SidebarDrawer({
   onOpenAuth,
   onSignOut,
   onOpenAIScanner,
-  onOpenCloudModal,
   onExportJSON,
   onImportJSONClick,
   onAddRow,
@@ -209,22 +208,6 @@ export function SidebarDrawer({
             <span>AI Meal & Voice Scanner</span>
           </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onOpenCloudModal();
-            }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-[#0F3D3E] hover:bg-[#E8F5E9] transition-all"
-          >
-            <div className="flex items-center gap-2.5">
-              <Cloud className="w-4 h-4 text-[#2A9D8F]" />
-              <span>Cloud Database Sync</span>
-            </div>
-            {isCloudConnected && (
-              <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse"></span>
-            )}
-          </button>
-
           <div className="grid grid-cols-2 gap-2 pt-1">
             <button
               onClick={() => {
@@ -263,3 +246,4 @@ export function SidebarDrawer({
     </div>
   );
 }
+
