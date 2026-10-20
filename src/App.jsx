@@ -251,25 +251,22 @@ export default function App() {
               <span>{dynamicDateRange}</span>
               <span className="text-[#2A9D8F]">&bull;</span>
               <span className="text-[#0F3D3E] font-bold">{data.length} tracked days</span>
+              {isCloudConnected && (
+                <span
+                  onClick={() => setIsCloudModalOpen(true)}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#2A9D8F] font-bold cursor-pointer hover:underline"
+                  title="Live Cloud Sync Active (Click to manage)"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] animate-pulse"></span>
+                  Cloud
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         {/* Global Toolbar buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsCloudModalOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs border ${
-              isCloudConnected
-                ? 'bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border-[#2A9D8F]/40'
-                : 'bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200'
-            }`}
-            title={isCloudConnected ? 'Cloud Database Connected (Supabase)' : 'Local Storage Only - Tap to Connect Cloud'}
-          >
-            <Cloud className={`w-3.5 h-3.5 ${isCloudConnected ? 'text-[#2A9D8F]' : 'text-orange-600'}`} />
-            <span className="hidden sm:inline">{isCloudConnected ? 'Cloud Synced' : 'Sync Cloud'}</span>
-            <span className="sm:hidden">{isCloudConnected ? 'Cloud' : 'Sync'}</span>
-          </button>
           <button
             onClick={() => setIsAIScannerOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
