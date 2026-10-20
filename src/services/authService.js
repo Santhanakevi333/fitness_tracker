@@ -278,3 +278,4 @@ export async function signOut() {
   clearSession();
   return true;
 }
+

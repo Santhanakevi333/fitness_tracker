@@ -9,6 +9,7 @@ import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { WeeklyReview } from './components/WeeklyReview';
 import { AuthModal } from './components/AuthModal';
+import { SidebarDrawer } from './components/SidebarDrawer';
 import { getSavedSession, signOut, getUserDisplay } from './services/authService';
 import {
   isCloudConfigured,
@@ -34,13 +35,15 @@ import {
   User,
   LogOut,
   ChevronDown,
-  Users
+  Users,
+  Menu
 } from 'lucide-react';
 
 export default function App() {
   const [authSession, setAuthSession] = useState(() => getSavedSession());
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userMenuRef = useRef(null);
 
   const userDisplay = getUserDisplay(authSession?.user);
@@ -319,156 +322,211 @@ export default function App() {
   return (
     <div className="min-h-screen bg-transparent text-[#0F3D3E] flex flex-col">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#2A9D8F]/20 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 shadow-sm shadow-[#0F3D3E]/5">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[#E8F5E9] border border-[#2A9D8F]/35 p-1.5 flex items-center justify-center shadow-xs overflow-hidden">
-            <img src="/tracker.png" alt="FitTracker Logo" className="w-full h-full object-contain" />
+      <header className="sticky top-0 z-30 bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#2A9D8F]/20 px-3 sm:px-8 py-2.5 sm:py-3.5 shadow-sm shadow-[#0F3D3E]/5">
+        {/* Mobile Header (Sleek, Single-line, No Clutter) */}
+        <div className="flex md:hidden items-center justify-between gap-2 w-full">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-9 h-9 rounded-xl bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/35 flex items-center justify-center transition-all shadow-xs active:scale-95"
+              aria-label="Open Navigation Drawer"
+            >
+              <Menu className="w-5 h-5 text-[#0F3D3E]" />
+            </button>
+            <div className="flex items-center gap-1.5" onClick={() => setIsSidebarOpen(true)}>
+              <div className="w-8 h-8 rounded-xl bg-[#E8F5E9] border border-[#2A9D8F]/30 p-1 flex items-center justify-center overflow-hidden">
+                <img src="/tracker.png" alt="Logo" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h1 className="font-black text-sm text-[#0F3D3E] tracking-tight leading-none">FitTracker Pro</h1>
+                <div className="flex items-center gap-1 text-[10px] text-[#355E5F] font-semibold mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F]"></span>
+                  <span className="max-w-[80px] truncate">{userDisplay.name}</span>
+                  <span>&bull; {data.length}d</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-base sm:text-lg text-[#0F3D3E] tracking-tight">FitTracker Pro</h1>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40 shadow-xs">
-                Slate on Mint
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium flex-wrap">
-              <Calendar className="w-3.5 h-3.5 text-[#2A9D8F]" />
-              <span>{dynamicDateRange}</span>
-              <span className="text-[#2A9D8F]">&bull;</span>
-              <span className="text-[#0F3D3E] font-bold">{data.length} tracked days</span>
-              <span className="text-[#2A9D8F]">&bull;</span>
-              <span className="inline-flex items-center gap-1 font-semibold text-[#0F3D3E]">
-                <User className="w-3 h-3 text-[#2A9D8F]" />
-                <span className="max-w-[90px] truncate">{userDisplay.name}</span>
-              </span>
-              {isCloudConnected && (
-                <span
-                  onClick={() => setIsCloudModalOpen(true)}
-                  className="inline-flex items-center gap-1 text-[11px] text-[#2A9D8F] font-bold cursor-pointer hover:underline"
-                  title="Live Cloud Sync Active (Click to manage)"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] animate-pulse"></span>
-                  Cloud
-                </span>
-              )}
-            </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setIsAIScannerOpen(true)}
+              className="p-2 rounded-xl bg-[#E8F5E9] text-[#2A9D8F] border border-[#2A9D8F]/30 active:scale-95 transition-all shadow-xs"
+              title="AI Scanner"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+
+            {/* Profile Avatar Button (Opens Drawer) */}
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-8 h-8 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] text-xs font-black flex items-center justify-center border border-[#2A9D8F]/40 shadow-xs active:scale-95"
+              title={`Logged in as ${userDisplay.name}`}
+            >
+              {userDisplay.initials}
+            </button>
+
+            {/* Quick Add Log Button */}
+            <button
+              onClick={handleAddRow}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2A9D8F]/25 active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Log</span>
+            </button>
           </div>
         </div>
 
-        {/* Global Toolbar buttons */}
-        <div className="flex items-center gap-2">
-          {/* Multi-User Profile / Sign In Button */}
-          <div className="relative" ref={userMenuRef}>
-            {!userDisplay.isGuest ? (
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
-                title={`Logged in as ${userDisplay.email}`}
-              >
-                <span className="w-5 h-5 rounded-lg bg-[#0F3D3E] text-[#E8F5E9] text-[10px] font-black flex items-center justify-center">
-                  {userDisplay.initials}
+        {/* Desktop Header (Full Expanded Toolbar) */}
+        <div className="hidden md:flex items-center justify-between gap-4 w-full">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#E8F5E9] border border-[#2A9D8F]/35 p-1.5 flex items-center justify-center shadow-xs overflow-hidden">
+              <img src="/tracker.png" alt="FitTracker Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-extrabold text-base sm:text-lg text-[#0F3D3E] tracking-tight">FitTracker Pro</h1>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/40 shadow-xs">
+                  Slate on Mint
                 </span>
-                <span className="hidden md:inline max-w-[100px] truncate">{userDisplay.name}</span>
-                <ChevronDown className="w-3 h-3 text-[#2A9D8F]" />
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-bold transition-all shadow-xs"
-                title="Sign in to create your personal profile or switch accounts"
-              >
-                <User className="w-3.5 h-3.5 text-[#2A9D8F]" />
-                <span className="hidden sm:inline">Sign In / Register</span>
-                <span className="sm:hidden">Sign In</span>
-              </button>
-            )}
-
-            {/* User Dropdown Menu */}
-            {isUserMenuOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#2A9D8F]/15">
-                  <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center font-bold text-sm">
-                    {userDisplay.initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-extrabold text-xs text-[#0F3D3E] truncate">{userDisplay.name}</p>
-                    <p className="text-[11px] text-[#355E5F] truncate">{userDisplay.email}</p>
-                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2A9D8F] text-[9px] font-extrabold border border-[#2A9D8F]/30">
-                      Active Profile
-                    </span>
-                  </div>
-                </div>
-
-                <div className="py-2.5 space-y-1 text-xs">
-                  <div className="flex items-center justify-between px-2 py-1 text-[#355E5F] text-[11px]">
-                    <span>Personal Logs:</span>
-                    <strong className="text-[#0F3D3E]">{data.length} Tracked Days</strong>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-[#E8F5E9] text-xs font-semibold text-[#0F3D3E] transition-all text-left"
-                  >
-                    <Users className="w-3.5 h-3.5 text-[#2A9D8F]" />
-                    <span>Switch / Add Account</span>
-                  </button>
-                </div>
-
-                <div className="pt-2 border-t border-[#2A9D8F]/15">
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-xs font-bold text-rose-700 transition-all text-left"
-                  >
-                    <LogOut className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
               </div>
-            )}
+              <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium flex-wrap">
+                <Calendar className="w-3.5 h-3.5 text-[#2A9D8F]" />
+                <span>{dynamicDateRange}</span>
+                <span className="text-[#2A9D8F]">&bull;</span>
+                <span className="text-[#0F3D3E] font-bold">{data.length} tracked days</span>
+                <span className="text-[#2A9D8F]">&bull;</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-[#0F3D3E]">
+                  <User className="w-3 h-3 text-[#2A9D8F]" />
+                  <span className="max-w-[120px] truncate">{userDisplay.name}</span>
+                </span>
+                {isCloudConnected && (
+                  <span
+                    onClick={() => setIsCloudModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] text-[#2A9D8F] font-bold cursor-pointer hover:underline"
+                    title="Live Cloud Sync Active (Click to manage)"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] animate-pulse"></span>
+                    Cloud
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={() => setIsAIScannerOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
-            title="Scan Meal Photo or Voice Log Activity with AI"
-          >
-            <Camera className="w-3.5 h-3.5 text-[#2A9D8F]" />
-            <Mic className="w-3.5 h-3.5 text-[#0F3D3E]" />
-            <span className="hidden sm:inline">AI Scanner</span>
-            <span className="sm:hidden">AI Scan</span>
-          </button>
-          <button
-            onClick={exportJSON}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
-            title="Download Clean JSON Schema"
-          >
-            <Download className="w-3.5 h-3.5 text-[#2A9D8F]" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-          <input
-            type="file"
-            accept=".json,application/json"
-            ref={jsonInputRef}
-            onChange={handleImportJSON}
-            className="hidden"
-          />
-          <button
-            onClick={() => jsonInputRef.current?.click()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
-            title="Import JSON Log File from Mobile"
-          >
-            <Upload className="w-3.5 h-3.5 text-[#2A9D8F]" />
-            <span className="hidden sm:inline">Import</span>
-          </button>
-          <button
-            onClick={handleAddRow}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2A9D8F]/25 transition-all hover:scale-[1.02]"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Log</span>
-          </button>
+          {/* Desktop Toolbar buttons */}
+          <div className="flex items-center gap-2">
+            {/* Multi-User Profile Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              {!userDisplay.isGuest ? (
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
+                  title={`Logged in as ${userDisplay.email}`}
+                >
+                  <span className="w-5 h-5 rounded-lg bg-[#0F3D3E] text-[#E8F5E9] text-[10px] font-black flex items-center justify-center">
+                    {userDisplay.initials}
+                  </span>
+                  <span className="max-w-[100px] truncate">{userDisplay.name}</span>
+                  <ChevronDown className="w-3 h-3 text-[#2A9D8F]" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-bold transition-all shadow-xs"
+                  title="Sign in to create your personal profile or switch accounts"
+                >
+                  <User className="w-3.5 h-3.5 text-[#2A9D8F]" />
+                  <span>Sign In / Register</span>
+                </button>
+              )}
+
+              {/* User Dropdown Menu (Safe Desktop Positioning) */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
+                  <div className="flex items-center gap-3 pb-3 border-b border-[#2A9D8F]/15">
+                    <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center font-bold text-sm">
+                      {userDisplay.initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-xs text-[#0F3D3E] truncate">{userDisplay.name}</p>
+                      <p className="text-[11px] text-[#355E5F] truncate">{userDisplay.email}</p>
+                      <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2A9D8F] text-[9px] font-extrabold border border-[#2A9D8F]/30">
+                        Active Profile
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="py-2.5 space-y-1 text-xs">
+                    <div className="flex items-center justify-between px-2 py-1 text-[#355E5F] text-[11px]">
+                      <span>Personal Logs:</span>
+                      <strong className="text-[#0F3D3E]">{data.length} Tracked Days</strong>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-[#E8F5E9] text-xs font-semibold text-[#0F3D3E] transition-all text-left"
+                    >
+                      <Users className="w-3.5 h-3.5 text-[#2A9D8F]" />
+                      <span>Switch / Add Account</span>
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#2A9D8F]/15">
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-xs font-bold text-rose-700 transition-all text-left"
+                    >
+                      <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setIsAIScannerOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
+              title="Scan Meal Photo or Voice Log Activity with AI"
+            >
+              <Camera className="w-3.5 h-3.5 text-[#2A9D8F]" />
+              <Mic className="w-3.5 h-3.5 text-[#0F3D3E]" />
+              <span>AI Scanner</span>
+            </button>
+            <button
+              onClick={exportJSON}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
+              title="Download Clean JSON Schema"
+            >
+              <Download className="w-3.5 h-3.5 text-[#2A9D8F]" />
+              <span>Export</span>
+            </button>
+            <input
+              type="file"
+              accept=".json,application/json"
+              ref={jsonInputRef}
+              onChange={handleImportJSON}
+              className="hidden"
+            />
+            <button
+              onClick={() => jsonInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
+              title="Import JSON Log File from Mobile"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#2A9D8F]" />
+              <span>Import</span>
+            </button>
+            <button
+              onClick={handleAddRow}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-[#0F3D3E] to-[#2A9D8F] hover:from-[#155455] hover:to-[#32b5a6] text-white rounded-xl text-xs font-bold shadow-md shadow-[#2A9D8F]/25 transition-all hover:scale-[1.02]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Log</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -478,7 +536,17 @@ export default function App() {
         <MetricCards data={data} />
 
         {/* Tab Navigation Bar */}
-        <div className="flex items-center gap-1 overflow-x-auto theme-box-sub p-1.5 rounded-2xl text-xs shadow-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto theme-box-sub p-1.5 rounded-2xl text-xs shadow-xs">
+          {/* Mobile Menu Pill */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/30 font-bold shrink-0 shadow-xs active:scale-95"
+            title="Open all tabs & tools menu"
+          >
+            <Menu className="w-3.5 h-3.5 text-[#2A9D8F]" />
+            <span>Menu</span>
+          </button>
+
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -668,6 +736,26 @@ export default function App() {
         onClose={() => setIsCloudModalOpen(false)}
         localData={data}
         onSyncSuccess={handleCloudSyncSuccess}
+      />
+
+      {/* Mobile Slide-over Sidebar Drawer */}
+      <SidebarDrawer
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        tabs={tabs}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        userDisplay={userDisplay}
+        trackedDaysCount={data.length}
+        isCloudConnected={isCloudConnected}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onSignOut={handleSignOut}
+        onOpenAIScanner={() => setIsAIScannerOpen(true)}
+        onOpenCloudModal={() => setIsCloudModalOpen(true)}
+        onExportJSON={exportJSON}
+        onImportJSONClick={() => jsonInputRef.current?.click()}
+        onAddRow={handleAddRow}
+        dateRange={dynamicDateRange}
       />
 
       {/* Multi-User Authentication Modal */}
