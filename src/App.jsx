@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { initialFitnessData } from './data/fitnessData';
 import { MetricCards } from './components/MetricCards';
 import { CalorieChart, WeightTrendChart, ProteinIntakeChart, WorkoutDistribution, SleepEnergyChart } from './components/Charts';
@@ -10,7 +10,8 @@ import { CloudSyncModal } from './components/CloudSyncModal';
 import {
   isCloudConfigured,
   fetchLogsFromCloud,
-  upsertLogRowToCloud
+  upsertLogRowToCloud,
+  bulkUploadLogsToCloud
 } from './services/cloudDbService';
 import {
   Activity,
@@ -21,6 +22,7 @@ import {
   Sparkles,
   Plus,
   Download,
+  Upload,
   Calendar,
   Camera,
   Mic,
@@ -186,6 +188,32 @@ export default function App() {
     document.body.removeChild(link);
   };
 
+  const jsonInputRef = useRef(null);
+
+  const handleImportJSON = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setData(parsed);
+          if (isCloudConfigured()) {
+            await bulkUploadLogsToCloud(parsed);
+          }
+          alert(`Successfully loaded & synced ${parsed.length} logs!`);
+        } else {
+          alert('Invalid JSON file format. Expected an array of logs.');
+        }
+      } catch (err) {
+        alert('Failed to parse JSON file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   // Dynamic Date Range Calculation
   const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
   const earliest = sortedData[0];
@@ -259,6 +287,21 @@ export default function App() {
           >
             <Download className="w-3.5 h-3.5 text-[#2A9D8F]" />
             <span className="hidden sm:inline">Export</span>
+          </button>
+          <input
+            type="file"
+            accept=".json,application/json"
+            ref={jsonInputRef}
+            onChange={handleImportJSON}
+            className="hidden"
+          />
+          <button
+            onClick={() => jsonInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F0F9F4] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-semibold transition-all shadow-xs"
+            title="Import JSON Log File from Mobile"
+          >
+            <Upload className="w-3.5 h-3.5 text-[#2A9D8F]" />
+            <span className="hidden sm:inline">Import</span>
           </button>
           <button
             onClick={handleAddRow}
