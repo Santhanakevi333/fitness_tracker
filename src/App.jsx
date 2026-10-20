@@ -4,7 +4,6 @@ import { MetricCards } from './components/MetricCards';
 import { CalorieChart, WeightTrendChart, ProteinIntakeChart, WorkoutDistribution, SleepEnergyChart } from './components/Charts';
 import { DataTable } from './components/DataTable';
 import { AddEditModal } from './components/AddEditModal';
-import { AIFitnessCoach } from './components/AIFitnessCoach';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { WeeklyReview } from './components/WeeklyReview';
 import { AuthModal } from './components/AuthModal';
@@ -316,7 +315,6 @@ export default function App() {
     { id: 'training', label: 'Training & Split', icon: Dumbbell },
     { id: 'recovery', label: 'Sleep & Energy', icon: Moon },
     { id: 'table', label: 'Spreadsheet Log', icon: TableIcon },
-    { id: 'coach', label: 'AI Coach Insights', icon: Sparkles },
   ];
 
   // AUTH GATE: New visitors or logged-out users are prompted to Sign In or Create Account first!
@@ -612,9 +610,6 @@ export default function App() {
                 <WorkoutDistribution data={data} />
               </div>
             </div>
-
-            {/* Live Dynamic AI Coach Recommendations */}
-            <AIFitnessCoach data={data} />
           </div>
         )}
 
@@ -721,12 +716,6 @@ export default function App() {
               onEditRow={handleEditRow}
               onAddRow={handleAddRow}
             />
-          </div>
-        )}
-
-        {activeTab === 'coach' && (
-          <div className="space-y-6 animate-fadeIn">
-            <AIFitnessCoach data={data} />
           </div>
         )}
       </main>
