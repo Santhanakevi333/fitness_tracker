@@ -8,6 +8,8 @@ import { AIFitnessCoach } from './components/AIFitnessCoach';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { WeeklyReview } from './components/WeeklyReview';
+import { AuthModal } from './components/AuthModal';
+import { getSavedSession, signOut, getUserDisplay } from './services/authService';
 import {
   isCloudConfigured,
   fetchLogsFromCloud,
@@ -28,17 +30,50 @@ import {
   Camera,
   Mic,
   Cloud,
-  Award
+  Award,
+  User,
+  LogOut,
+  ChevronDown,
+  Users
 } from 'lucide-react';
 
 export default function App() {
+  const [authSession, setAuthSession] = useState(() => getSavedSession());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
+  const userDisplay = getUserDisplay(authSession?.user);
+
+  // Close user dropdown menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [data, setData] = useState(() => {
     try {
-      const saved = localStorage.getItem('fit_tracker_pro_data');
+      const session = getSavedSession();
+      const storageKey = session?.user?.id
+        ? `fit_tracker_data_${session.user.id}`
+        : 'fit_tracker_pro_data';
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
+        }
+      }
+      const generalSaved = localStorage.getItem('fit_tracker_pro_data');
+      if (generalSaved) {
+        const parsedGen = JSON.parse(generalSaved);
+        if (Array.isArray(parsedGen) && parsedGen.length > 0) {
+          return parsedGen;
         }
       }
     } catch (e) {
@@ -47,13 +82,20 @@ export default function App() {
     return initialFitnessData;
   });
 
+  // Save data to localStorage per active user
   useEffect(() => {
     try {
-      localStorage.setItem('fit_tracker_pro_data', JSON.stringify(data));
+      const storageKey = authSession?.user?.id
+        ? `fit_tracker_data_${authSession.user.id}`
+        : 'fit_tracker_pro_data';
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      if (!authSession?.user?.id) {
+        localStorage.setItem('fit_tracker_pro_data', JSON.stringify(data));
+      }
     } catch (e) {
       console.error('Failed to save data to localStorage:', e);
     }
-  }, [data]);
+  }, [data, authSession]);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,10 +104,10 @@ export default function App() {
   const [isCloudConnected, setIsCloudConnected] = useState(() => isCloudConfigured());
   const [editingRow, setEditingRow] = useState(null);
 
-  // Auto-fetch from Supabase Cloud on load if configured
+  // Auto-fetch from Supabase Cloud on load or when auth session changes
   useEffect(() => {
     if (isCloudConfigured()) {
-      fetchLogsFromCloud()
+      fetchLogsFromCloud(authSession)
         .then((cloudRows) => {
           if (cloudRows && cloudRows.length > 0) {
             setData(cloudRows);
@@ -76,7 +118,47 @@ export default function App() {
           console.warn('Initial cloud fetch error:', err);
         });
     }
-  }, []);
+  }, [authSession]);
+
+  const handleAuthSuccess = async (newSession, importExisting) => {
+    setAuthSession(newSession);
+    setIsCloudConnected(isCloudConfigured());
+
+    if (isCloudConfigured() && newSession) {
+      try {
+        const cloudRows = await fetchLogsFromCloud(newSession);
+        if (cloudRows && cloudRows.length > 0) {
+          setData(cloudRows);
+        } else if (importExisting && data.length > 0) {
+          await bulkUploadLogsToCloud(data, newSession);
+          const refreshed = await fetchLogsFromCloud(newSession);
+          if (refreshed && refreshed.length > 0) {
+            setData(refreshed);
+          }
+        } else {
+          setData(initialFitnessData);
+        }
+      } catch (err) {
+        console.error('Error fetching/migrating user data:', err);
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setAuthSession(null);
+    setIsUserMenuOpen(false);
+    try {
+      const saved = localStorage.getItem('fit_tracker_pro_data');
+      if (saved) {
+        setData(JSON.parse(saved));
+      } else {
+        setData(initialFitnessData);
+      }
+    } catch (e) {
+      setData(initialFitnessData);
+    }
+  };
 
   const handleCloudSyncSuccess = (cloudLogs) => {
     if (cloudLogs && cloudLogs.length > 0) {
@@ -121,7 +203,7 @@ export default function App() {
         };
 
         if (isCloudConfigured()) {
-          upsertLogRowToCloud(updated[targetIndex]).catch((err) => console.error('Cloud upsert error:', err));
+          upsertLogRowToCloud(updated[targetIndex], authSession).catch((err) => console.error('Cloud upsert error:', err));
         }
 
         return updated;
@@ -148,7 +230,7 @@ export default function App() {
         updated[targetIndex] = merged;
 
         if (isCloudConfigured()) {
-          upsertLogRowToCloud(merged).catch((err) => console.error('Cloud upsert error:', err));
+          upsertLogRowToCloud(merged, authSession).catch((err) => console.error('Cloud upsert error:', err));
         }
 
         return updated;
@@ -171,7 +253,7 @@ export default function App() {
       }
 
       if (isCloudConfigured()) {
-        upsertLogRowToCloud(savedRow).catch((err) => console.error('Cloud upsert error:', err));
+        upsertLogRowToCloud(savedRow, authSession).catch((err) => console.error('Cloud upsert error:', err));
       }
 
       return updated;
@@ -202,7 +284,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           setData(parsed);
           if (isCloudConfigured()) {
-            await bulkUploadLogsToCloud(parsed);
+            await bulkUploadLogsToCloud(parsed, authSession);
           }
           alert(`Successfully loaded & synced ${parsed.length} logs!`);
         } else {
@@ -249,11 +331,16 @@ export default function App() {
                 Slate on Mint
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium">
+            <div className="flex items-center gap-2 text-xs text-[#355E5F] mt-0.5 font-medium flex-wrap">
               <Calendar className="w-3.5 h-3.5 text-[#2A9D8F]" />
               <span>{dynamicDateRange}</span>
               <span className="text-[#2A9D8F]">&bull;</span>
               <span className="text-[#0F3D3E] font-bold">{data.length} tracked days</span>
+              <span className="text-[#2A9D8F]">&bull;</span>
+              <span className="inline-flex items-center gap-1 font-semibold text-[#0F3D3E]">
+                <User className="w-3 h-3 text-[#2A9D8F]" />
+                <span className="max-w-[90px] truncate">{userDisplay.name}</span>
+              </span>
               {isCloudConnected && (
                 <span
                   onClick={() => setIsCloudModalOpen(true)}
@@ -270,6 +357,78 @@ export default function App() {
 
         {/* Global Toolbar buttons */}
         <div className="flex items-center gap-2">
+          {/* Multi-User Profile / Sign In Button */}
+          <div className="relative" ref={userMenuRef}>
+            {!userDisplay.isGuest ? (
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
+                title={`Logged in as ${userDisplay.email}`}
+              >
+                <span className="w-5 h-5 rounded-lg bg-[#0F3D3E] text-[#E8F5E9] text-[10px] font-black flex items-center justify-center">
+                  {userDisplay.initials}
+                </span>
+                <span className="hidden md:inline max-w-[100px] truncate">{userDisplay.name}</span>
+                <ChevronDown className="w-3 h-3 text-[#2A9D8F]" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#E8F5E9] text-[#0F3D3E] border border-[#2A9D8F]/30 rounded-xl text-xs font-bold transition-all shadow-xs"
+                title="Sign in to create your personal profile or switch accounts"
+              >
+                <User className="w-3.5 h-3.5 text-[#2A9D8F]" />
+                <span className="hidden sm:inline">Sign In / Register</span>
+                <span className="sm:hidden">Sign In</span>
+              </button>
+            )}
+
+            {/* User Dropdown Menu */}
+            {isUserMenuOpen && (
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
+                <div className="flex items-center gap-3 pb-3 border-b border-[#2A9D8F]/15">
+                  <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center font-bold text-sm">
+                    {userDisplay.initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-extrabold text-xs text-[#0F3D3E] truncate">{userDisplay.name}</p>
+                    <p className="text-[11px] text-[#355E5F] truncate">{userDisplay.email}</p>
+                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#2A9D8F] text-[9px] font-extrabold border border-[#2A9D8F]/30">
+                      Active Profile
+                    </span>
+                  </div>
+                </div>
+
+                <div className="py-2.5 space-y-1 text-xs">
+                  <div className="flex items-center justify-between px-2 py-1 text-[#355E5F] text-[11px]">
+                    <span>Personal Logs:</span>
+                    <strong className="text-[#0F3D3E]">{data.length} Tracked Days</strong>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-[#E8F5E9] text-xs font-semibold text-[#0F3D3E] transition-all text-left"
+                  >
+                    <Users className="w-3.5 h-3.5 text-[#2A9D8F]" />
+                    <span>Switch / Add Account</span>
+                  </button>
+                </div>
+
+                <div className="pt-2 border-t border-[#2A9D8F]/15">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl hover:bg-rose-50 text-xs font-bold text-rose-700 transition-all text-left"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => setIsAIScannerOpen(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
@@ -509,6 +668,14 @@ export default function App() {
         onClose={() => setIsCloudModalOpen(false)}
         localData={data}
         onSyncSuccess={handleCloudSyncSuccess}
+      />
+
+      {/* Multi-User Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        hasLocalLogs={data && data.length > 0}
       />
 
       {/* Mobile Floating AI Quick Action Pill */}

@@ -45,9 +45,9 @@ export function isCloudConfigured() {
 }
 
 // Convert app camelCase object to Postgres snake_case
-function toDbRow(d) {
-  return {
-    id: String(d.id || d.date),
+function toDbRow(d, userId = null) {
+  const row = {
+    id: userId ? (d.id && String(d.id).startsWith(`${userId}_`) ? String(d.id) : `${userId}_${d.date}`) : String(d.id || d.date),
     date: d.date || '',
     raw_date: d.rawDate || d.raw_date || '',
     display_date: d.displayDate || d.display_date || '',
@@ -70,12 +70,19 @@ function toDbRow(d) {
     energy: typeof d.energy === 'number' ? d.energy : null,
     notes: d.notes || ''
   };
+
+  if (userId) {
+    row.user_id = userId;
+  }
+
+  return row;
 }
 
 // Convert Postgres snake_case back to app camelCase
 function fromDbRow(r) {
   return {
     id: r.id || r.date,
+    userId: r.user_id || null,
     date: r.date,
     rawDate: r.raw_date || r.date,
     displayDate: r.display_date || r.date,
@@ -101,20 +108,45 @@ function fromDbRow(r) {
 }
 
 /**
- * Fetch all logs from Cloud Database
+ * Fetch all logs from Cloud Database (supports user-specific isolation)
  */
-export async function fetchLogsFromCloud() {
+export async function fetchLogsFromCloud(userSession = null) {
   const config = getCloudConfig();
   if (!config) return null;
 
-  const endpoint = `${config.url}/rest/v1/fitness_logs?select=*&order=date.asc`;
-  const res = await fetch(endpoint, {
-    headers: {
-      apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
-      'Content-Type': 'application/json'
+  const token = userSession?.access_token && !userSession.access_token.startsWith('local_')
+    ? userSession.access_token
+    : config.key;
+  const userId = userSession?.user?.id;
+
+  const headers = {
+    apikey: config.key,
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+
+  // If logged in as specific user, attempt to query only their rows
+  if (userId) {
+    const userEndpoint = `${config.url}/rest/v1/fitness_logs?select=*&user_id=eq.${encodeURIComponent(userId)}&order=date.asc`;
+    const res = await fetch(userEndpoint, { headers });
+
+    if (res.ok) {
+      const rows = await res.json();
+      return rows.map(fromDbRow);
     }
-  });
+
+    // If user_id column doesn't exist yet in Supabase table, fallback gracefully
+    const err = await res.json().catch(() => ({}));
+    if (err.message && err.message.includes('user_id') && err.message.includes('does not exist')) {
+      console.warn('user_id column not found in Supabase table. Falling back to general logs.');
+    } else {
+      throw new Error(err.message || `Cloud fetch error: ${res.status}`);
+    }
+  }
+
+  // General fetch (guest or fallback)
+  const endpoint = `${config.url}/rest/v1/fitness_logs?select=*&order=date.asc`;
+  const res = await fetch(endpoint, { headers });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -126,25 +158,50 @@ export async function fetchLogsFromCloud() {
 }
 
 /**
- * Upsert a single log row to Cloud Database
+ * Upsert a single log row to Cloud Database (supports user-specific tagging)
  */
-export async function upsertLogRowToCloud(log) {
+export async function upsertLogRowToCloud(log, userSession = null) {
   const config = getCloudConfig();
   if (!config) return null;
 
-  const endpoint = `${config.url}/rest/v1/fitness_logs?on_conflict=id`;
-  const dbRow = toDbRow(log);
+  const token = userSession?.access_token && !userSession.access_token.startsWith('local_')
+    ? userSession.access_token
+    : config.key;
+  const userId = userSession?.user?.id || null;
 
-  const res = await fetch(endpoint, {
+  const endpoint = `${config.url}/rest/v1/fitness_logs?on_conflict=id`;
+  let dbRow = toDbRow(log, userId);
+
+  let res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=representation'
     },
     body: JSON.stringify(dbRow)
   });
+
+  // If user_id column doesn't exist yet, retry without user_id
+  if (!res.ok && userId) {
+    const err = await res.json().catch(() => ({}));
+    if (err.message && err.message.includes('user_id') && err.message.includes('does not exist')) {
+      dbRow = toDbRow(log, null);
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          apikey: config.key,
+          Authorization: `Bearer ${config.key}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=representation'
+        },
+        body: JSON.stringify(dbRow)
+      });
+    } else {
+      throw new Error(err.message || `Cloud upsert error: ${res.status}`);
+    }
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -155,25 +212,50 @@ export async function upsertLogRowToCloud(log) {
 }
 
 /**
- * Bulk upload multiple logs to Cloud (e.g. migrate localStorage to Cloud in 1 click)
+ * Bulk upload multiple logs to Cloud (supports user-specific tagging)
  */
-export async function bulkUploadLogsToCloud(logs) {
+export async function bulkUploadLogsToCloud(logs, userSession = null) {
   const config = getCloudConfig();
   if (!config) throw new Error('Cloud configuration missing. Please enter your Supabase URL & Key.');
 
-  const endpoint = `${config.url}/rest/v1/fitness_logs?on_conflict=id`;
-  const dbRows = logs.map(toDbRow);
+  const token = userSession?.access_token && !userSession.access_token.startsWith('local_')
+    ? userSession.access_token
+    : config.key;
+  const userId = userSession?.user?.id || null;
 
-  const res = await fetch(endpoint, {
+  const endpoint = `${config.url}/rest/v1/fitness_logs?on_conflict=id`;
+  let dbRows = logs.map(l => toDbRow(l, userId));
+
+  let res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       apikey: config.key,
-      Authorization: `Bearer ${config.key}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates'
     },
     body: JSON.stringify(dbRows)
   });
+
+  // If user_id column doesn't exist yet, retry without user_id
+  if (!res.ok && userId) {
+    const err = await res.json().catch(() => ({}));
+    if (err.message && err.message.includes('user_id') && err.message.includes('does not exist')) {
+      dbRows = logs.map(l => toDbRow(l, null));
+      res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          apikey: config.key,
+          Authorization: `Bearer ${config.key}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(dbRows)
+      });
+    } else {
+      throw new Error(err.message || `Cloud bulk upload error: ${res.status}`);
+    }
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -186,16 +268,20 @@ export async function bulkUploadLogsToCloud(logs) {
 /**
  * Delete a log row from Cloud Database
  */
-export async function deleteLogRowFromCloud(id) {
+export async function deleteLogRowFromCloud(id, userSession = null) {
   const config = getCloudConfig();
   if (!config) return null;
+
+  const token = userSession?.access_token && !userSession.access_token.startsWith('local_')
+    ? userSession.access_token
+    : config.key;
 
   const endpoint = `${config.url}/rest/v1/fitness_logs?id=eq.${encodeURIComponent(id)}`;
   const res = await fetch(endpoint, {
     method: 'DELETE',
     headers: {
       apikey: config.key,
-      Authorization: `Bearer ${config.key}`
+      Authorization: `Bearer ${token}`
     }
   });
 
@@ -208,9 +294,10 @@ export async function deleteLogRowFromCloud(id) {
 }
 
 // SQL Schema for the user to copy/paste in Supabase SQL Editor
-export const SUPABASE_SQL_SCHEMA = `-- 1. Create fitness_logs table
+export const SUPABASE_SQL_SCHEMA = `-- 1. Create fitness_logs table (if not exists)
 CREATE TABLE IF NOT EXISTS public.fitness_logs (
   id TEXT PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   date TEXT NOT NULL,
   raw_date TEXT,
   display_date TEXT,
@@ -235,13 +322,35 @@ CREATE TABLE IF NOT EXISTS public.fitness_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 2. Enable Row Level Security (RLS) & Allow Read/Write
+-- 2. Add user_id column safely if table already exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'fitness_logs' AND column_name = 'user_id'
+  ) THEN
+    ALTER TABLE public.fitness_logs ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+-- 3. Enable Row Level Security (RLS)
 ALTER TABLE public.fitness_logs ENABLE ROW LEVEL SECURITY;
 
+-- 4. Multi-User Policy: Users can only see, add, and modify their own logs
+DROP POLICY IF EXISTS "Users can access own logs" ON public.fitness_logs;
+CREATE POLICY "Users can access own logs"
+ON public.fitness_logs
+FOR ALL
+TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- 5. Fallback Policy: Allow public access for guest/unauthenticated preview
 DROP POLICY IF EXISTS "Public Full Access" ON public.fitness_logs;
 CREATE POLICY "Public Full Access"
 ON public.fitness_logs
 FOR ALL
+TO anon
 USING (true)
 WITH CHECK (true);
 `;
