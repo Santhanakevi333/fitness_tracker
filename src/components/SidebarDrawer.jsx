@@ -72,8 +72,8 @@ export function SidebarDrawer({
           {!userDisplay.isGuest ? (
             <div className="theme-box rounded-2xl p-3.5 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#0F3D3E] text-[#E8F5E9] font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
-                  {userDisplay.initials}
+                <div className="w-11 h-11 rounded-2xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center shrink-0 shadow-xs border border-[#2A9D8F]/30">
+                  <User className="w-6 h-6 text-[#2A9D8F]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">

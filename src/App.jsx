@@ -321,9 +321,11 @@ export default function App() {
   // Prevents leaking personal workout & macro data to unauthenticated visitors
   if (!authSession && !isGuestAllowed) {
     return (
-      <div className="min-h-screen bg-[#E8F5E9] flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-80 h-80 bg-[#2A9D8F]/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-80 h-80 bg-[#0F3D3E]/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="min-h-screen bg-[#071314] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        {/* Athletic gym ambient lighting effects */}
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-[#2A9D8F]/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 bg-[#0F3D3E]/40 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-lg bg-radial from-[#2A9D8F]/10 to-transparent blur-2xl pointer-events-none"></div>
 
         <div className="relative z-10 w-full max-w-md">
           <AuthModal
@@ -382,10 +384,10 @@ export default function App() {
             {/* Profile Avatar Button (Opens Drawer) */}
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="w-8 h-8 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] text-xs font-black flex items-center justify-center border border-[#2A9D8F]/40 shadow-xs active:scale-95"
+              className="w-8 h-8 rounded-xl bg-[#0F3D3E] text-[#2A9D8F] flex items-center justify-center border border-[#2A9D8F]/40 shadow-xs active:scale-95"
               title={`Logged in as ${userDisplay.name}`}
             >
-              {userDisplay.initials}
+              <User className="w-4 h-4" />
             </button>
 
             {/* Quick Add Log Button */}
@@ -445,8 +447,8 @@ export default function App() {
                   className="flex items-center gap-2 px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#D4EED8] text-[#0F3D3E] border border-[#2A9D8F]/40 rounded-xl text-xs font-bold transition-all shadow-xs"
                   title={`Logged in as ${userDisplay.email}`}
                 >
-                  <span className="w-5 h-5 rounded-lg bg-[#0F3D3E] text-[#E8F5E9] text-[10px] font-black flex items-center justify-center">
-                    {userDisplay.initials}
+                  <span className="w-5 h-5 rounded-lg bg-[#0F3D3E] text-[#2A9D8F] flex items-center justify-center">
+                    <User className="w-3 h-3" />
                   </span>
                   <span className="max-w-[100px] truncate">{userDisplay.name}</span>
                   <ChevronDown className="w-3 h-3 text-[#2A9D8F]" />
@@ -466,8 +468,8 @@ export default function App() {
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
                   <div className="flex items-center gap-3 pb-3 border-b border-[#2A9D8F]/15">
-                    <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#E8F5E9] flex items-center justify-center font-bold text-sm">
-                      {userDisplay.initials}
+                    <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#2A9D8F] flex items-center justify-center shadow-xs border border-[#2A9D8F]/30">
+                      <User className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-extrabold text-xs text-[#0F3D3E] truncate">{userDisplay.name}</p>
