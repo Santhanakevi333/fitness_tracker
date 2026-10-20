@@ -7,6 +7,7 @@ import { AddEditModal } from './components/AddEditModal';
 import { AIFitnessCoach } from './components/AIFitnessCoach';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { WeeklyReview } from './components/WeeklyReview';
 import {
   isCloudConfigured,
   fetchLogsFromCloud,
@@ -26,7 +27,8 @@ import {
   Calendar,
   Camera,
   Mic,
-  Cloud
+  Cloud,
+  Award
 } from 'lucide-react';
 
 export default function App() {
@@ -224,6 +226,7 @@ export default function App() {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'weekly', label: '7-Day Review', icon: Award },
     { id: 'nutrition', label: 'Nutrition & Macros', icon: Flame },
     { id: 'training', label: 'Training & Split', icon: Dumbbell },
     { id: 'recovery', label: 'Sleep & Energy', icon: Moon },
@@ -363,6 +366,10 @@ export default function App() {
             {/* Live Dynamic AI Coach Recommendations */}
             <AIFitnessCoach data={data} />
           </div>
+        )}
+
+        {activeTab === 'weekly' && (
+          <WeeklyReview data={data} />
         )}
 
         {activeTab === 'nutrition' && (
