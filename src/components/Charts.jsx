@@ -381,66 +381,143 @@ export function ProteinIntakeChart({ data }) {
   );
 }
 
-// 4. Workout Distribution & Leg Alert (Dynamically calculated from live tracked data)
+// 4. Workout Distribution & Single Muscle Breakdown (Dynamically calculated from live tracked data)
 export function WorkoutDistribution({ data, distribution }) {
-  // If data is provided, calculate distribution dynamically from actual tracked logs
+  // Calculate single muscle distribution dynamically from actual tracked logs
   const computedDistribution = React.useMemo(() => {
     if (!data || data.length === 0) {
       return distribution || [];
     }
 
-    const counts = {
-      'Chest & Triceps': 0,
-      'Back & Biceps': 0,
-      'Shoulders': 0,
-      'Legs & Lower Body': 0,
-      'Core & Boxing': 0,
-      'Rest / Active Recovery': 0,
-      'Other / Full Body': 0
-    };
+    const muscleDefs = [
+      {
+        id: 'chest',
+        name: 'Chest',
+        color: '#2A9D8F',
+        keywords: ['chest', 'bench', 'pec', 'incline', 'decline', 'fly', 'push-up', 'pushup', 'push up'],
+        isPrimary: true
+      },
+      {
+        id: 'back',
+        name: 'Back',
+        color: '#0F3D3E',
+        keywords: ['back', 'lat', 'row', 'deadlift', 'rhomboid', 'pulldown', 'pull-up', 'pullup', 'chin-up'],
+        isPrimary: true
+      },
+      {
+        id: 'shoulders',
+        name: 'Shoulders',
+        color: '#3AAFA9',
+        keywords: ['shoulder', 'delt', 'overhead', 'military', 'lateral', 'ohp', 'shrug'],
+        isPrimary: true
+      },
+      {
+        id: 'biceps',
+        name: 'Biceps',
+        color: '#1F6F78',
+        keywords: ['bice', 'curl', 'preacher', 'hammer', 'bicep', 'biceps'],
+        isPrimary: true
+      },
+      {
+        id: 'triceps',
+        name: 'Triceps',
+        color: '#457B9D',
+        keywords: ['trice', 'pushdown', 'dip', 'skull', 'extension', 'tricep', 'triceps', 'kickback'],
+        isPrimary: true
+      },
+      {
+        id: 'legs',
+        name: 'Legs & Lower Body',
+        color: '#E76F51',
+        keywords: ['leg', 'quad', 'hamstring', 'squat', 'calf', 'calves', 'lunge', 'leg press', 'lower body'],
+        isPrimary: true
+      },
+      {
+        id: 'abs',
+        name: 'Abs & Core',
+        color: '#52B788',
+        keywords: ['abs', 'ab', 'core', 'plank', 'crunch', 'leg raise', 'hanging raise'],
+        checkFlag: (d) => Boolean(d.abs),
+        isPrimary: true
+      },
+      {
+        id: 'forearms',
+        name: 'Forearms',
+        color: '#38A3A5',
+        keywords: ['forearm', 'wrist', 'grip', 'reverse curl'],
+        isPrimary: false
+      },
+      {
+        id: 'boxing',
+        name: 'Boxing & Cardio',
+        color: '#F4A261',
+        keywords: ['box', 'boxing', 'cardio', 'combat', 'punch', 'running', 'treadmill', 'hiit', 'skipping', 'jump rope'],
+        checkFlag: (d) => Boolean(d.boxing),
+        isPrimary: false
+      },
+      {
+        id: 'rest',
+        name: 'Rest / Active Recovery',
+        color: '#8EAF9D',
+        isRest: true,
+        isPrimary: true
+      }
+    ];
+
+    const counts = {};
+    muscleDefs.forEach(m => { counts[m.id] = 0; });
 
     data.forEach(d => {
       const rawWorkout = (d.workout || '').toLowerCase().trim();
       const rawCat = (d.workoutCategory || '').toLowerCase().trim();
-      const isGym = d.gym === true || (d.gym !== false && !['nil', 'rest', 'off', 'pending', ''].includes(rawWorkout));
 
-      if (!isGym || ['nil', 'rest', 'off', 'pending', ''].includes(rawWorkout) || rawCat === 'rest' || rawCat === 'pending') {
-        counts['Rest / Active Recovery']++;
+      const hasActiveSession =
+        d.gym === true ||
+        d.boxing === true ||
+        d.abs === true ||
+        (!['nil', 'rest', 'off', 'pending', ''].includes(rawWorkout) && rawCat !== 'rest' && rawCat !== 'pending');
+
+      if (!hasActiveSession) {
+        counts['rest']++;
         return;
       }
 
-      if (rawCat === 'legs & shoulders' || rawCat.includes('leg') || rawWorkout.includes('leg') || rawWorkout.includes('squat') || rawWorkout.includes('quad') || rawWorkout.includes('hamstring') || rawWorkout.includes('calf') || rawWorkout.includes('lower')) {
-        counts['Legs & Lower Body']++;
-      } else if (rawCat === 'shoulders & back' || rawCat === 'shoulders' || (rawWorkout.includes('shoulder') && !rawWorkout.includes('chest'))) {
-        counts['Shoulders']++;
-      } else if (rawCat === 'chest & triceps' || rawCat === 'chest & shoulders' || rawWorkout.includes('chest') || rawWorkout.includes('tricep') || (rawWorkout.includes('push') && !rawWorkout.includes('pull'))) {
-        counts['Chest & Triceps']++;
-      } else if (rawCat === 'back & biceps' || rawWorkout.includes('back') || rawWorkout.includes('lat') || rawWorkout.includes('bice') || rawWorkout.includes('pull')) {
-        counts['Back & Biceps']++;
-      } else if (rawCat === 'core & boxing' || rawWorkout.includes('box') || rawWorkout.includes('abs') || rawWorkout.includes('core')) {
-        counts['Core & Boxing']++;
-      } else {
-        counts['Other / Full Body']++;
-      }
+      const combined = `${rawWorkout} ${rawCat}`;
+
+      muscleDefs.forEach(m => {
+        if (m.isRest) return;
+
+        // Check explicit flag (abs / boxing)
+        if (m.checkFlag && m.checkFlag(d)) {
+          counts[m.id]++;
+          return;
+        }
+
+        // Check keywords
+        if (m.keywords && m.keywords.some(kw => combined.includes(kw))) {
+          counts[m.id]++;
+          return;
+        }
+
+        // Secondary contextual push/pull matches
+        if (m.id === 'chest' && combined.includes('push') && !combined.includes('pull')) {
+          counts[m.id]++;
+        } else if (m.id === 'back' && combined.includes('pull') && !combined.includes('push')) {
+          counts[m.id]++;
+        }
+      });
     });
 
-    const categoryMetadata = [
-      { name: 'Chest & Triceps', color: '#2A9D8F' },
-      { name: 'Back & Biceps', color: '#0F3D3E' },
-      { name: 'Shoulders', color: '#3AAFA9' },
-      { name: 'Core & Boxing', color: '#52B788' },
-      { name: 'Legs & Lower Body', color: '#E76F51' },
-      { name: 'Rest / Active Recovery', color: '#8EAF9D' },
-      { name: 'Other / Full Body', color: '#4D7C8A' }
-    ];
-
-    return categoryMetadata
-      .map(cat => ({
-        name: cat.name,
-        count: counts[cat.name] || 0,
-        color: cat.color
+    return muscleDefs
+      .map(m => ({
+        name: m.name,
+        id: m.id,
+        count: counts[m.id] || 0,
+        color: m.color,
+        isPrimary: m.isPrimary
       }))
-      .filter(cat => cat.count > 0 || cat.name !== 'Other / Full Body');
+      // Keep all primary muscle groups + any specialty group that was trained (count > 0)
+      .filter(m => m.isPrimary || m.count > 0);
   }, [data, distribution]);
 
   const activeDistribution = computedDistribution && computedDistribution.length > 0
