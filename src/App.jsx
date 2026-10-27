@@ -6,6 +6,7 @@ import { DataTable } from './components/DataTable';
 import { AddEditModal } from './components/AddEditModal';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { WeeklyReview } from './components/WeeklyReview';
+import { MonthlyReview } from './components/MonthlyReview';
 import { AuthModal } from './components/AuthModal';
 import { SidebarDrawer } from './components/SidebarDrawer';
 import { getSavedSession, signOut, getUserDisplay } from './services/authService';
@@ -30,6 +31,7 @@ import {
   Mic,
   Cloud,
   Award,
+  Trophy,
   User,
   LogOut,
   ChevronDown,
@@ -311,6 +313,7 @@ export default function App() {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'weekly', label: '7-Day Review', icon: Award },
+    { id: 'monthly', label: '30-Day Report', icon: Trophy },
     { id: 'nutrition', label: 'Nutrition & Macros', icon: Flame },
     { id: 'training', label: 'Training & Split', icon: Dumbbell },
     { id: 'recovery', label: 'Sleep & Energy', icon: Moon },
@@ -464,9 +467,9 @@ export default function App() {
                 </button>
               )}
 
-              {/* User Dropdown Menu (Safe Desktop Positioning) */}
+              {/* User Dropdown Menu (Safe Responsive Positioning - Never clips off-screen) */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
+                <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white border border-[#2A9D8F]/30 shadow-xl p-3.5 z-50 animate-fadeIn text-[#0F3D3E]">
                   <div className="flex items-center gap-3 pb-3 border-b border-[#2A9D8F]/15">
                     <div className="w-10 h-10 rounded-xl bg-[#0F3D3E] text-[#2A9D8F] flex items-center justify-center shadow-xs border border-[#2A9D8F]/30">
                       <User className="w-5 h-5" />
@@ -619,6 +622,13 @@ export default function App() {
           <WeeklyReview data={data} />
         )}
 
+        {activeTab === 'monthly' && (
+          <MonthlyReview
+            data={data}
+            onSwitchToSpreadsheet={() => setActiveTab('table')}
+          />
+        )}
+
         {activeTab === 'nutrition' && (
           <div className="space-y-6 animate-fadeIn">
             <CalorieChart data={data} />
@@ -717,6 +727,7 @@ export default function App() {
               data={data}
               onEditRow={handleEditRow}
               onAddRow={handleAddRow}
+              onOpenMonthlyReport={() => setActiveTab('monthly')}
             />
           </div>
         )}
