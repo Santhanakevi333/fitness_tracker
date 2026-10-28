@@ -434,8 +434,8 @@ export function DataTable({ data = [], onEditRow, onAddRow, onOpenMonthlyReport 
                       )}
                     </td>
 
-                    {/* Workout */}
-                    <td className="py-2.5 px-3 max-w-[170px] truncate" title={row.workout}>
+                    {/* Workout & Weights */}
+                    <td className="py-2.5 px-3 max-w-[220px] truncate" title={row.workout}>
                       <span className={row.gym ? 'text-[#0F3D3E] font-semibold' : 'text-gray-400 italic'}>
                         {row.workout || 'Nil'}
                       </span>

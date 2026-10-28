@@ -7,6 +7,7 @@ import { AddEditModal } from './components/AddEditModal';
 import { AIMealVoiceScannerModal } from './components/AIMealVoiceScannerModal';
 import { WeeklyReview } from './components/WeeklyReview';
 import { MonthlyReview } from './components/MonthlyReview';
+import { ExerciseWeightTracker } from './components/ExerciseWeightTracker';
 import { AuthModal } from './components/AuthModal';
 import { SidebarDrawer } from './components/SidebarDrawer';
 import { getSavedSession, signOut, getUserDisplay } from './services/authService';
@@ -315,7 +316,7 @@ export default function App() {
     { id: 'weekly', label: '7-Day Review', icon: Award },
     { id: 'monthly', label: '30-Day Report', icon: Trophy },
     { id: 'nutrition', label: 'Nutrition & Macros', icon: Flame },
-    { id: 'training', label: 'Training & Split', icon: Dumbbell },
+    { id: 'training', label: 'Training & Weights', icon: Dumbbell },
     { id: 'recovery', label: 'Sleep & Energy', icon: Moon },
     { id: 'table', label: 'Spreadsheet Log', icon: TableIcon },
   ];
@@ -662,6 +663,12 @@ export default function App() {
 
         {activeTab === 'training' && (
           <div className="space-y-6 animate-fadeIn">
+            {/* Progressive Overload & Exercise Weight Tracker */}
+            <ExerciseWeightTracker
+              data={data}
+              onOpenAddModal={handleAddRow}
+            />
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-6">
                 <WorkoutDistribution data={data} />
@@ -745,6 +752,7 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveRow}
         initialData={editingRow}
+        allLogs={data}
       />
 
       {/* AI Meal Photo Scanner & Voice Logger Modal */}

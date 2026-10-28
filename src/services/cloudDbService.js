@@ -1,5 +1,6 @@
 // Cloud Database Service for FitTracker Pro using Supabase PostgREST
 // 100% Zero-Dependency Native Fetch - Works across mobile, desktop, and all browsers
+import { parseExercisesFromWorkoutText } from '../utils/exerciseUtils';
 
 const CONFIG_STORAGE_KEY = 'fit_tracker_supabase_config';
 
@@ -46,6 +47,12 @@ export function isCloudConfigured() {
 
 // Convert app camelCase object to Postgres snake_case
 function toDbRow(d, userId = null) {
+  let cleanNotes = d.notes || '';
+  if (Array.isArray(d.exercises) && d.exercises.length > 0) {
+    cleanNotes = cleanNotes.replace(/\n?<!--lifts:.*?-->/g, '').trim();
+    cleanNotes = cleanNotes ? `${cleanNotes}\n<!--lifts:${JSON.stringify(d.exercises)}-->` : `<!--lifts:${JSON.stringify(d.exercises)}-->`;
+  }
+
   const row = {
     id: userId ? (d.id && String(d.id).startsWith(`${userId}_`) ? String(d.id) : `${userId}_${d.date}`) : String(d.id || d.date),
     date: d.date || '',
@@ -68,7 +75,7 @@ function toDbRow(d, userId = null) {
     fiber: typeof d.fiber === 'number' ? d.fiber : null,
     sleep: typeof d.sleep === 'number' ? d.sleep : null,
     energy: typeof d.energy === 'number' ? d.energy : null,
-    notes: d.notes || ''
+    notes: cleanNotes
   };
 
   if (userId) {
@@ -80,6 +87,20 @@ function toDbRow(d, userId = null) {
 
 // Convert Postgres snake_case back to app camelCase
 function fromDbRow(r) {
+  let exercises = [];
+  let notes = r.notes || '';
+  const liftsMatch = notes.match(/<!--lifts:(.*?)-->/);
+  if (liftsMatch) {
+    try {
+      exercises = JSON.parse(liftsMatch[1]);
+      notes = notes.replace(/\n?<!--lifts:.*?-->/g, '').trim();
+    } catch (e) {
+      console.warn('Failed to parse lifts JSON:', e);
+    }
+  } else if (r.workout) {
+    exercises = parseExercisesFromWorkoutText(r.workout);
+  }
+
   return {
     id: r.id || r.date,
     userId: r.user_id || null,
@@ -103,7 +124,8 @@ function fromDbRow(r) {
     fiber: typeof r.fiber === 'number' ? r.fiber : (r.fiber ? Number(r.fiber) : 0),
     sleep: typeof r.sleep === 'number' ? r.sleep : (r.sleep ? Number(r.sleep) : 0),
     energy: typeof r.energy === 'number' ? r.energy : (r.energy ? Number(r.energy) : 0),
-    notes: r.notes || ''
+    notes,
+    exercises
   };
 }
 
